@@ -166,12 +166,17 @@ class GameUI{
             "yellow": document.querySelectorAll(".step_yellow")
         }
         this.pieces = {};
+        this.pieces_width = 30;
+        this.board = undefined;
     };
     _pieceClicked(event){
         event.target.classList.toggle("selected");
         event.target.previousElementSibling.classList.toggle("selected");
     }
     addPieceToStep(color, bodytype, step, board){
+        if(!this.board){
+            this.board = board;
+        }
         let pieceId = color+"_"+bodytype;
         let pieceElem = board.getElementById(pieceId);
         pieceElem.classList.add("piece");
@@ -181,36 +186,15 @@ class GameUI{
         }
         let stepElem = board.querySelector("#step_"+step);
         if(stepElem){
-            pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - 30/2}px, ${stepElem.getAttribute("cy") - 30/2}px)`;
+            pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
             //stepElem.appendChild(pieceElem);
         }
     };
-    movePieceFromStepToStep(color, bodytype, fromStep, toStep){
+    movePieceFromStepToStep(color, bodytype, toStep){
         let pieceId = color+"_"+bodytype;
-        let pieceElem = document.getElementById(pieceId);
-        let fromStepElem = document.getElementById("step_"+fromStep);
-        let toStepElem = document.getElementById("step_"+toStep);
-        if(pieceElem && fromStepElem && toStepElem){
-            fetch("/move_piece", {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    "color": color,
-                    "bodytype": bodytype,
-                    "fromStep": fromStep,
-                    "toStep": toStep,
-                    "key": game.me.key
-                })
-            }).then(response => response.json()).then(data => {
-                if(data["status"] === "ok"){
-                    fromStepElem.removeChild(pieceElem);
-                    toStepElem.appendChild(pieceElem);
-                }
-            });
-        }
+        let pieceElem = this.board.getElementById(pieceId);
+        let stepElem = this.board.querySelector("#"+toStep);
+        pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
     };
 }
 
@@ -243,6 +227,7 @@ class Game{
     generateSteps(){
         this.board = document.getElementById("board");
         this.board.addEventListener("load", () => {
+            this.gameUI.board = this.board.contentDocument;
             var boardDoc = this.board.contentDocument;
             for(var i=1; i<=58; i++){
                 let stepElem = boardDoc.getElementById("step_"+i);
@@ -276,8 +261,8 @@ class Game{
         });
     };
     setup(){
+
         this.generateSteps();
-        // Come genero una chiave univoca per il giocatore lato client?
         this.me.key = this.cookieManager.getCookie("game_key");
         this.comm.addConnection("register_player",(comm,message)=>{
             this.me.bodytype = BodyTypes[message["player_info"]["bodytype"].toUpperCase()];
