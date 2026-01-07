@@ -1,0 +1,140 @@
+@import url("style_canovaccio.css");
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+body{
+    background-color: #222;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
+#gameboard{
+    background: url("board-1.jpg") no-repeat center center fixed;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}
+#personality{
+    right: 10px;
+}
+#player_info_ui{
+    position: absolute;
+    bottom: 0;
+    height: 150px;
+    width: 200px;
+    left: 10px;
+    bottom: 10px;
+    border: 1px solid white;
+    background: #ccc;
+    color: black;
+    display: flex;
+    flex-direction: column;
+    padding: 0px 20px 20px 20px;
+}
+#colordiv{
+    width: 50px;
+    height: 50px;
+}
+#colordiv_1, #colordiv_2, #colordiv_3{
+    width: 40px;
+    height: 40px;
+}
+#bodytypediv{
+    width: 100px;
+    height: 50px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+#player_name{
+    text-align: center;
+}
+#player_info_ui.color_red>#colordiv{
+    background-color: red;
+}
+#player_info_ui.color_blue>#colordiv{
+    background-color: blue;
+}
+#player_info_ui.color_green>#colordiv{
+    background-color: green;
+}
+#player_info_ui.color_yellow>#colordiv{
+    background-color: yellow;
+}
+
+#player_info_ui_1{
+    width: 40px;
+    height: 40px;
+    border: 1px solid white;
+    position: absolute;
+    left: 10px;
+    transform: translate(0, 0);
+    top: 10px;
+}
+
+#player_info_ui_2{
+    width: 40px;
+    height: 40px;
+    border: 1px solid white;
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, 0);
+    top: 10px;
+}
+
+#player_info_ui_3{
+    width: 40px;
+    height: 40px;
+    border: 1px solid white;
+    position: absolute;
+    right: 10px;
+    transform: translate(0, 0);
+    top: 10px;
+}
+
+#player_info_ui_1.color_red>#colordiv_1{
+    background-color: red;
+}
+#player_info_ui_1.color_blue>#colordiv_1{
+    background-color: blue;
+}
+#player_info_ui_1.color_green>#colordiv_1{
+    background-color: green;
+}
+#player_info_ui_1.color_yellow>#colordiv_1{
+    background-color: yellow;
+}
+#player_info_ui_2.color_red>#colordiv_2{
+    background-color: red;
+}
+#player_info_ui_2.color_blue>#colordiv_2{
+    background-color: blue;
+}
+#player_info_ui_2.color_green>#colordiv_2{
+    background-color: green;
+}
+#player_info_ui_2.color_yellow>#colordiv_2{
+    background-color: yellow;
+}
+#player_info_ui_3.color_red>#colordiv_3{
+    background-color: red;
+}
+#player_info_ui_3.color_blue>#colordiv_3{
+    background-color: blue;
+}
+#player_info_ui_3.color_green>#colordiv_3{
+    background-color: green;
+}
+#player_info_ui_3.color_yellow>#colordiv_3{
+    background-color: yellow;
+}
+#controls{
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translate(0, -50%);
+    height: 50%;
+}
