@@ -6,6 +6,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     left: -100%;
+    background-color: white;
 }
 #canovaccio>table{
     background-color: white;
@@ -18,12 +19,13 @@
     text-align: end;
     
 }
+#canovaccio>table>tbody>tr>td{
+    width: 12px;
+    height: 12px;
+    align-content: start;
+}
 #canovaccio>table>tbody>tr>td>input{
     width: 12px;
     height: 12px;
     text-align: center;
-}
-#canovaccio>table>tbody>tr>td{
-    width: 12px;
-    height: 12px;
 }

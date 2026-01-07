@@ -42,11 +42,21 @@ class Player:
         self.key = key
         self.client_id = None
         self.starting = False
+        self.positions = []
     def setAttribute(self, color, body, mission, personality):
         self.color = color
         self.bodytype = body
         self.mission = mission
         self.personality = personality
+        if color == 'red':
+            self.positions = [2,27,31,52,*np.random.choice(BODYTYPES, size=4, replace=False)]
+        elif color == 'green':
+            self.positions = [14,24,35,55,*np.random.choice(BODYTYPES, size=4, replace=False)]
+        elif color == 'blue':
+            self.positions = [13,20,38,41,*np.random.choice(BODYTYPES, size=4, replace=False)]
+        elif color == 'yellow':
+            self.positions = [5,12,21,44,*np.random.choice(BODYTYPES, size=4, replace=False)]
+        print("Position: ", self.positions)
     def toDict(self):
         return {
             "bodytype": self.bodytype,
@@ -55,7 +65,8 @@ class Player:
             "personality": self.personality,
             "key": self.key,
             "id": self.client_id,
-            "starting": self.starting
+            "starting": self.starting,
+            "positions": self.positions
         }
 
 Player1 = Player()
@@ -125,7 +136,7 @@ class ConnectionManager:
         players_info.append(Player2.toDict())
         players_info.append(Player3.toDict())
         players_info.append(Player4.toDict())
-        await self.broadcast({"type": "request_players_info", "players": players_info})
+        await self.broadcast({"type": "request_players_info", "players": players_info, "turn": TURNO})
 
 manager = ConnectionManager()
 

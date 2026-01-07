@@ -156,6 +156,40 @@ class PlayerUI{
     }
 }
 
+class GameUI{
+    constructor(){
+        this.steps = document.getElementById("steps");
+        this.base_color = {
+            "red": document.querySelectorAll(".step_red"),
+            "green": document.querySelectorAll(".step_green"),
+            "blue": document.querySelectorAll(".step_blue"),
+            "yellow": document.querySelectorAll(".step_yellow")
+        }
+    };
+    addPieceToStep(color, bodytype, step){
+        let pieceId = color+"_"+bodytype;
+        let pieceElem = document.createElement("img");
+        pieceElem.classList.add("piece");
+        pieceElem.id = pieceId;
+        pieceElem.src = "static/"+pieceId+".png";
+        let stepElem = document.getElementById("step_"+step);
+        if(stepElem){
+            stepElem.innerHTML = "";
+            stepElem.appendChild(pieceElem);
+        }
+    };
+    movePieceFromStepToStep(color, bodytype, fromStep, toStep){
+        let pieceId = color+"_"+bodytype;
+        let pieceElem = document.getElementById(pieceId);
+        let fromStepElem = document.getElementById("step_"+fromStep);
+        let toStepElem = document.getElementById("step_"+toStep);
+        if(pieceElem && fromStepElem && toStepElem){
+            fromStepElem.removeChild(pieceElem);
+            toStepElem.appendChild(pieceElem);
+        }
+    };
+}
+
 class Game{
     constructor(){
         this.comm = new Communication();
@@ -164,6 +198,7 @@ class Game{
         this.me.name = "ME";
         this.players = [this.me, new Player(),new Player(),new Player()];
         this.playerUI = new PlayerUI(this.players[0], "player_info_ui");
+        this.gameUI = new GameUI();
         this.otherPlayersUI = [
             new PlayerUI(this.players[1], "player_info_ui_1"),
             new PlayerUI(this.players[2], "player_info_ui_2"),
@@ -202,6 +237,9 @@ class Game{
                     this.players[p].personality = Personality[message["players"][p]["personality"]];
                     this.players[p].playerUI.setColor(this.players[p].color);
                     this.players[p].playerUI.setBodyType(this.players[p].bodytype);
+                }
+                for(var i=0; i<4; i++){
+                    this.gameUI.addPieceToStep(message["players"][p]["color"], message["players"][p]["positions"][i+4], message["players"][p]["positions"][i]);
                 }
             }
         });

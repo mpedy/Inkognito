@@ -1,0 +1,28 @@
+#steps>div{
+    width: 14px;
+    height: 14px;
+    border: 1px solid black;
+    border-radius: 50%;
+    display: inline-block;
+    position: absolute;
+    background-color: white;
+}
+#steps>div.ambassy{
+    width: 30px;
+    height: 30px;
+    border: 2px solid black;
+    border-radius: 50%;
+    background-color: black;
+}
+#steps>div.step_red{
+    background-color: red;
+}
+#steps>div.step_yellow{
+    background-color: yellow;
+}
+#steps>div.step_blue{
+    background-color: blue;
+}
+#steps>div.step_green{
+    background-color: green;
+}

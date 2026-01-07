@@ -18,12 +18,73 @@
     </script>
 </head>
 <body>
-    <div id="gameboard"></div>
+    <div id="gameboard">
+        <div id="steps">
+            <div id="step_1" style="left: 870px; top: 95px;"></div>
+            <div id="step_2" class="step_red" style="left: 596px; top: 156px;"></div>
+            <div id="step_3" style="left: 541px; top: 172px;"></div>
+            <div id="step_4" style="left: 414px; top: 169px;"></div>
+            <div id="step_5" class="step_yellow" style="left: 421px; top: 204px;"></div>
+            <div id="step_6" style="left: 480px; top: 204px;"></div>
+            <div id="step_7" style="left: 533px; top: 208px;"></div>
+            <div id="step_8" style="left: 558px; top: 231px;"></div>
+            <div id="step_9" style="left: 634px; top: 208px;"></div>
+            <div id="step_10" style="left: 685px; top: 177px;"></div>
+            <div id="step_11" style="left: 715px; top: 233px;"></div>
+            <div id="step_12" class="step_yellow" style="left: 803px; top: 231px;"></div>
+            <div id="step_13" class="step_blue" style="left: 644px; top: 251px;"></div>
+            <div id="step_14" class="step_green" style="left: 497px; top: 270px;"></div>
+            <div id="step_15" style="left: 397px; top: 249px;"></div>
+            <div id="step_16" style="left: 273px; top: 268px;"></div>
+            <div id="step_17" style="left: 341px; top: 284px;"></div>
+            <div id="step_18" style="left: 395px; top: 304px;"></div>
+            <div id="step_19" style="left: 261px; top: 324px;"></div>
+            <div id="step_20" class="step_blue" style="left: 309px; top: 363px;"></div>
+            <div id="step_21" class="step_yellow" style="left: 361px; top: 332px;"></div>
+            <div id="step_22" style="left: 378px; top: 392px;"></div>
+            <div id="step_23" style="left: 313px; top: 408px;"></div>
+            <div id="step_24" class="step_green" style="left: 295px; top: 529px;"></div>
+            <div id="step_25" style="left: 383px; top: 611px;"></div>
+            <div id="step_26" style="left: 409px; top: 488px;"></div>
+            <div id="step_27" class="step_red" style="left: 418px; top: 427px;"></div>
+            <div id="step_28" style="left: 399px; top: 684px;"></div>
+            <div id="step_29" style="left: 429px; top: 353px;"></div>
+            <div id="step_30" style="left: 485px; top: 372px;"></div>
+            <div id="step_31" class="step_red" style="left: 489px; top: 659px;"></div>
+            <div id="step_32" style="left: 515px; top: 514px;"></div>
+            <div id="step_33" style="left: 485px; top: 448px;"></div>
+            <div id="step_34" style="left: 536px; top: 434px;"></div>
+            <div id="step_35" class="step_green" style="left: 573px; top: 372px;"></div>
+            <div id="step_36" style="left: 613px; top: 311px;"></div>
+            <div id="step_37" style="left: 609px; top: 275px;"></div>
+            <div id="step_38" class="step_blue" style="left: 601px; top: 483px;"></div>
+            <div id="step_39" style="left: 685px; top: 649px;"></div>
+            <div id="step_40" style="left: 864px; top: 585px;"></div>
+            <div id="step_41" class="step_blue" style="left: 1240px; top: 576px;"></div>
+            <div id="step_42" style="left: 677px; top: 456px;"></div>
+            <div id="step_43" style="left: 820px; top: 450px;"></div>
+            <div id="step_44" class="step_yellow" style="left: 929px; top: 452px;"></div>
+            <div id="step_45" style="left: 1116px; top: 488px;"></div>
+            <div id="step_46" style="left: 1173px; top: 508px;"></div>
+            <div id="step_47" style="left: 1062px; top: 452px;"></div>
+            <div id="step_48" style="left: 824px; top: 381px;"></div>
+            <div id="step_49" style="left: 718px; top: 370px;"></div>
+            <div id="step_50" style="left: 689px; top: 319px;"></div>
+            <div id="step_51" style="left: 802px; top: 303px;"></div>
+            <div id="step_52" class="step_red" style="left: 996px; top: 319px;"></div>
+            <div id="step_53" style="left: 920px; top: 356px;"></div>
+            <div id="step_54" style="left: 1142px; top: 367px;"></div>
+            <div id="step_55" class="step_green" style="left: 1133px; top: 443px;"></div>
+            <div id="step_56" style="left: 1262px; top: 445px;"></div>
+            <div id="step_57" style="left: 1237px; top: 389px;"></div>
+            <div id="step_58" class="ambassy" style="left: 554px; top: 280px;"></div>
+        </div>
+    </div>
     <div id="player_info_ui">
         <span id="player_name"></span>
-        <div style="height: 100%; padding: 10px 0px;">
-            <img id="player_img" style="height: 100%; float: left;" />
-            <img id="player_mission" style="height: 100%; float: right;" />
+        <div style="height: 100%; padding: 10px 0px; display: flex;">
+            <img id="player_img" style="height: 100%;" />
+            <img id="player_mission" style="height: 100%;" />
         </div>
     </div>
     <div id="player_info_ui_1"><div id="colordiv_1"></div><div id="bodytypediv_1"></div></div>
@@ -159,6 +220,9 @@
                 <td><input type="text"/></td>
             </tr>
             <tr>
+                <td colspan="10"></td>
+            </tr>
+            <tr>
                 <td rowspan="10">
                     <div>
                         <span>Giocatore: </span>
@@ -265,6 +329,9 @@
                 <td><input type="text"/></td>
                 <td><input type="text"/></td>
                 <td><input type="text"/></td>
+            </tr>
+            <tr>
+                <td colspan="10"></td>
             </tr>
             <tr>
                 <td rowspan="10">
