@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import random
@@ -73,6 +73,7 @@ Player1 = Player()
 Player2 = Player()
 Player3 = Player()
 Player4 = Player()
+Players = [Player1, Player2, Player3, Player4]
 
 def createNewPlayers():
     bodies = np.random.choice(BODYTYPES, size=4, replace=False)
@@ -104,6 +105,18 @@ createNewPlayers()
 @app.get("/")
 async def read_root():
     return HTMLResponse(open("index.html").read())
+
+@app.post("/move_piece")
+async def move_piece(request: Request, response: Response):
+    body = await request.json()
+    color = body["color"]
+    bodytype = body["bodytype"]
+    fromStep = body["fromStep"]
+    toStep = body["toStep"]
+    key = body["key"]
+    actual_player = list(filter(lambda p: p.key == key, Players))[0]
+    #if actual_player.key == key:
+
    
 
 class ConnectionManager:

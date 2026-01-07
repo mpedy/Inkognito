@@ -172,6 +172,9 @@ class GameUI{
         pieceElem.classList.add("piece");
         pieceElem.id = pieceId;
         pieceElem.src = "static/"+pieceId+".png";
+        pieceElem.addEventListener("click", function(event){
+            this.classList.toggle("selected");
+        });
         let stepElem = document.getElementById("step_"+step);
         if(stepElem){
             stepElem.innerHTML = "";
@@ -184,8 +187,25 @@ class GameUI{
         let fromStepElem = document.getElementById("step_"+fromStep);
         let toStepElem = document.getElementById("step_"+toStep);
         if(pieceElem && fromStepElem && toStepElem){
-            fromStepElem.removeChild(pieceElem);
-            toStepElem.appendChild(pieceElem);
+            fetch("/move_piece", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    "color": color,
+                    "bodytype": bodytype,
+                    "fromStep": fromStep,
+                    "toStep": toStep,
+                    "key": game.me.key
+                })
+            }).then(response => response.json()).then(data => {
+                if(data["status"] === "ok"){
+                    fromStepElem.removeChild(pieceElem);
+                    toStepElem.appendChild(pieceElem);
+                }
+            });
         }
     };
 }
@@ -208,9 +228,31 @@ class Game{
         this.players[2].playerUI = this.otherPlayersUI[1];
         this.players[3].playerUI = this.otherPlayersUI[2];
         this.key = null;
+        this.debug = true;
         this.setup();
     };
+    generateSteps(){
+        fetch("static/steps.json").then(response => response.json()).then(data => {
+            for(let step_index=0; step_index < data["steps"].length; step_index++){
+                let step = data["steps"][step_index];
+                let stepElem = document.createElement("div");
+                stepElem.classList.add("step");
+                stepElem.id = Object.keys(step)[0];
+                stepElem.style.left = step[stepElem.id]["left"];
+                stepElem.style.top = step[stepElem.id]["top"];
+                stepElem.style.color = "black";
+                if(this.debug){
+                    stepElem.innerHTML = stepElem.id.split("_")[1];
+                }
+                if(step[stepElem.id]["class"]){
+                    stepElem.classList.add(step[stepElem.id]["class"]);
+                }
+                document.getElementById("steps").appendChild(stepElem);
+            }
+        });
+    };
     setup(){
+        this.generateSteps();
         // Come genero una chiave univoca per il giocatore lato client?
         this.me.key = this.cookieManager.getCookie("game_key");
         this.comm.addConnection("register_player",(comm,message)=>{

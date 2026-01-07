@@ -149,3 +149,7 @@ body{
     left: 50%;
     top: 50%;
 }
+.piece.selected{
+    outline: 3px solid yellow;
+    background-color: #222;
+}
