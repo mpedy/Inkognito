@@ -165,20 +165,24 @@ class GameUI{
             "blue": document.querySelectorAll(".step_blue"),
             "yellow": document.querySelectorAll(".step_yellow")
         }
+        this.pieces = {};
     };
-    addPieceToStep(color, bodytype, step){
+    _pieceClicked(event){
+        event.target.classList.toggle("selected");
+        event.target.previousElementSibling.classList.toggle("selected");
+    }
+    addPieceToStep(color, bodytype, step, board){
         let pieceId = color+"_"+bodytype;
-        let pieceElem = document.createElement("img");
+        let pieceElem = board.getElementById(pieceId);
         pieceElem.classList.add("piece");
-        pieceElem.id = pieceId;
-        pieceElem.src = "static/"+pieceId+".png";
-        pieceElem.addEventListener("click", function(event){
-            this.classList.toggle("selected");
-        });
-        let stepElem = document.getElementById("step_"+step);
+        if(!this.pieces[pieceId]){
+            pieceElem.addEventListener("click", this._pieceClicked.bind(this));
+            this.pieces[pieceId] = pieceElem;
+        }
+        let stepElem = board.querySelector("#step_"+step);
         if(stepElem){
-            stepElem.innerHTML = "";
-            stepElem.appendChild(pieceElem);
+            pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - 30/2}px, ${stepElem.getAttribute("cy") - 30/2}px)`;
+            //stepElem.appendChild(pieceElem);
         }
     };
     movePieceFromStepToStep(color, bodytype, fromStep, toStep){
@@ -229,11 +233,31 @@ class Game{
         this.players[3].playerUI = this.otherPlayersUI[2];
         this.key = null;
         this.debug = true;
+        this.handlers = {
+            "stepClicked": (stepIndex) => {
+                console.log("Step clicked: "+stepIndex);
+            }
+        };
         this.setup();
     };
     generateSteps(){
+        this.board = document.getElementById("board");
+        this.board.addEventListener("load", () => {
+            var boardDoc = this.board.contentDocument;
+            for(var i=1; i<=58; i++){
+                let stepElem = boardDoc.getElementById("step_"+i);
+                stepElem.style.cursor = "pointer";
+                stepElem.addEventListener("click", this.handlers["stepClicked"].bind(this, i));
+            }
+            for(var i=1; i<=8; i++){
+                let textElem = boardDoc.getElementById("txt_"+i);
+                textElem.style.pointerEvents = "none";
+                let textElem1 = boardDoc.getElementById("txt_"+i+"_1");
+                textElem1.style.pointerEvents = "none";
+            }
+        });
         fetch("static/steps.json").then(response => response.json()).then(data => {
-            for(let step_index=0; step_index < data["steps"].length; step_index++){
+            /*for(let step_index=0; step_index < data["steps"].length; step_index++){
                 let step = data["steps"][step_index];
                 let stepElem = document.createElement("div");
                 stepElem.classList.add("step");
@@ -248,7 +272,7 @@ class Game{
                     stepElem.classList.add(step[stepElem.id]["class"]);
                 }
                 document.getElementById("steps").appendChild(stepElem);
-            }
+            }*/
         });
     };
     setup(){
@@ -281,7 +305,7 @@ class Game{
                     this.players[p].playerUI.setBodyType(this.players[p].bodytype);
                 }
                 for(var i=0; i<4; i++){
-                    this.gameUI.addPieceToStep(message["players"][p]["color"], message["players"][p]["positions"][i+4], message["players"][p]["positions"][i]);
+                    this.gameUI.addPieceToStep(message["players"][p]["color"], message["players"][p]["positions"][i+4], message["players"][p]["positions"][i], this.board.contentDocument);
                 }
             }
         });
