@@ -10,13 +10,19 @@ const BodyTypes = Object.freeze({
     MEDIUM: Symbol('medium'),
     LARGE: Symbol('large')
 });
-
 const Personality = Object.freeze({
     "Lord Fiddlebottom": Symbol("Lord Fiddlebottom"),
     "Colonel Bubble": Symbol("Colonel Bubble"),
     "Madame Tsatsa": Symbol("Madame Tsatsa"),
     "Agent X": Symbol("Agent X")
 })
+const MOVES = Object.freeze({
+    "white": Symbol("white"),
+    "black": Symbol("black"),
+    "red": Symbol("red"),
+    "blue": Symbol("blue"),
+    "yellow": Symbol("yellow")
+});
 
 class Player{
     constructor(name,color,bodytype, personality){
@@ -42,6 +48,11 @@ class Communication{
             }
         }
     };
+    startPingPong(interval){
+        setInterval(() => {
+            this.sendCraftedMessage("ping");
+        }, interval);
+    };
     sendMessage(message){
         if(this.ws.readyState !== WebSocket.OPEN){
             setTimeout(() => {
@@ -61,6 +72,20 @@ class Communication{
             this.ws.send(JSON.stringify(message));
         }
     }
+    sendAndWait(type, data=[]) {// type must start with "__"
+        return new Promise((resolve, reject) => {
+            if(type.startsWith("__") === false){
+                console.error("sendAndWait type must start with '__'");
+                return reject("sendAndWait type must start with '__'");
+            }
+            const handler = event => {
+                this.ws.removeEventListener("message", handler);
+                resolve(event.data);
+            };
+            this.ws.addEventListener("message", handler);
+            this.ws.send(JSON.stringify({type: type, data: data}));
+        });
+    };
     addConnection(type, handler){
         for(let conn of this.connections){
             if(conn.type === type){
@@ -157,7 +182,7 @@ class PlayerUI{
 }
 
 class GameUI{
-    constructor(){
+    constructor(game){
         this.steps = document.getElementById("steps");
         this.base_color = {
             "red": document.querySelectorAll(".step_red"),
@@ -168,10 +193,11 @@ class GameUI{
         this.pieces = {};
         this.pieces_width = 30;
         this.board = undefined;
+        this.game = game;
     };
-    _pieceClicked(event){
-        event.target.classList.toggle("selected");
-        event.target.previousElementSibling.classList.toggle("selected");
+    highlightPiece(pieceElem){
+        pieceElem.children[0].classList.toggle("selected");
+        pieceElem.children[1].classList.toggle("selected");
     }
     addPieceToStep(color, bodytype, step, board){
         if(!this.board){
@@ -181,12 +207,13 @@ class GameUI{
         let pieceElem = board.getElementById(pieceId);
         pieceElem.classList.add("piece");
         if(!this.pieces[pieceId]){
-            pieceElem.addEventListener("click", this._pieceClicked.bind(this));
+            pieceElem.addEventListener("click", this.game.handlers["pieceClicked"].bind(this.game, pieceId, pieceElem));
             this.pieces[pieceId] = pieceElem;
         }
         let stepElem = board.querySelector("#step_"+step);
         if(stepElem){
             pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
+            pieceElem.setAttribute("data-step", step);
             //stepElem.appendChild(pieceElem);
         }
     };
@@ -194,6 +221,7 @@ class GameUI{
         let pieceId = color+"_"+bodytype;
         let pieceElem = this.board.getElementById(pieceId);
         let stepElem = this.board.querySelector("#"+toStep);
+        pieceElem.setAttribute("data-step", toStep.split("step_")[1]);
         pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
     };
 }
@@ -206,7 +234,7 @@ class Game{
         this.me.name = "ME";
         this.players = [this.me, new Player(),new Player(),new Player()];
         this.playerUI = new PlayerUI(this.players[0], "player_info_ui");
-        this.gameUI = new GameUI();
+        this.gameUI = new GameUI(this);
         this.otherPlayersUI = [
             new PlayerUI(this.players[1], "player_info_ui_1"),
             new PlayerUI(this.players[2], "player_info_ui_2"),
@@ -217,9 +245,50 @@ class Game{
         this.players[3].playerUI = this.otherPlayersUI[2];
         this.key = null;
         this.debug = true;
+        this.pieceClicked = null;
+        this.moves = [];
         this.handlers = {
-            "stepClicked": (stepIndex) => {
+            "stepClicked": function(stepIndex, stepElem){
                 console.log("Step clicked: "+stepIndex);
+                if(true){//Condition on prophecy results, for now leave it true
+                    if(this.pieceClicked){
+                        this.comm.sendAndWait("__can_move_piece", {
+                            "piece_id": this.pieceClicked.id,
+                            "from_step": this.pieceClicked.getAttribute("data-step"),
+                            "to_step": stepIndex,
+                            "using_move": MOVES["yellow"].toString().split("Symbol(")[1].split(")")[0], // For now always yellow move
+                            "player_key": this.me.key
+                        }).then((response) => {
+                            response = JSON.parse(response);
+                            if(response["status"] == "ok"){
+                                this.gameUI.movePieceFromStepToStep(
+                                    this.pieceClicked.id.split("_")[0],
+                                    this.pieceClicked.id.split("_")[1],
+                                    stepElem.id
+                                );
+                            }else{
+                                console.log(response);
+                            }
+                            this.gameUI.highlightPiece(this.pieceClicked);
+                            this.pieceClicked = null;
+                        })
+                    }
+
+                }
+            },
+            "pieceClicked": function(pieceId, pieceElem){
+                console.log("Piece clicked: "+pieceId);
+                this.gameUI.highlightPiece(pieceElem);
+                if(!this.pieceClicked){
+                    this.pieceClicked = pieceElem;
+                }else{
+                    if(this.pieceClicked === pieceElem){
+                        this.pieceClicked = null;
+                    }else{
+                        this.gameUI.highlightPiece(this.pieceClicked);
+                        this.pieceClicked = pieceElem;
+                    }
+                }
             }
         };
         this.setup();
@@ -232,7 +301,7 @@ class Game{
             for(var i=1; i<=58; i++){
                 let stepElem = boardDoc.getElementById("step_"+i);
                 stepElem.style.cursor = "pointer";
-                stepElem.addEventListener("click", this.handlers["stepClicked"].bind(this, i));
+                stepElem.addEventListener("click", this.handlers["stepClicked"].bind(this, i, stepElem));
             }
             for(var i=1; i<=8; i++){
                 let textElem = boardDoc.getElementById("txt_"+i);
@@ -242,28 +311,20 @@ class Game{
             }
         });
         fetch("static/steps.json").then(response => response.json()).then(data => {
-            /*for(let step_index=0; step_index < data["steps"].length; step_index++){
-                let step = data["steps"][step_index];
-                let stepElem = document.createElement("div");
-                stepElem.classList.add("step");
-                stepElem.id = Object.keys(step)[0];
-                stepElem.style.left = step[stepElem.id]["left"];
-                stepElem.style.top = step[stepElem.id]["top"];
-                stepElem.style.color = "black";
-                if(this.debug){
-                    stepElem.innerHTML = stepElem.id.split("_")[1];
-                }
-                if(step[stepElem.id]["class"]){
-                    stepElem.classList.add(step[stepElem.id]["class"]);
-                }
-                document.getElementById("steps").appendChild(stepElem);
-            }*/
+           this.connections = data["connections"];
         });
     };
     setup(){
-
         this.generateSteps();
         this.me.key = this.cookieManager.getCookie("game_key");
+        this.comm.addConnection("pong", (comm, message)=>{
+            console.log("Pong received");
+        })
+        this.comm.addConnection("ping", (comm, message)=>{
+            console.log("Ping received: ", message)
+            comm.sendCraftedMessage("pong");
+        })
+        this.comm.startPingPong(30000);
         this.comm.addConnection("register_player",(comm,message)=>{
             this.me.bodytype = BodyTypes[message["player_info"]["bodytype"].toUpperCase()];
             this.me.color = Colors[message["player_info"]["color"].toUpperCase()];

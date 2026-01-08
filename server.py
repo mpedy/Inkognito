@@ -33,8 +33,11 @@ client_ids = []
 
 associations = []
 
+steps = json.load(open("static/steps.json"))
+
 class Player:
-    def __init__(self, bodytype = None, color=None, mission=None, personality=None, key=None):
+    def __init__(self, player_turn, bodytype = None, color=None, mission=None, personality=None, key=None):
+        self.player_turn = player_turn
         self.bodytype = bodytype
         self.color = color
         self.mission = mission
@@ -69,18 +72,20 @@ class Player:
             "positions": self.positions
         }
 
-Player1 = Player()
-Player2 = Player()
-Player3 = Player()
-Player4 = Player()
+Player1 = Player(1)
+Player2 = Player(2)
+Player3 = Player(3)
+Player4 = Player(4)
 Players = [Player1, Player2, Player3, Player4]
 
 def createNewPlayers():
+    global TURNO
     bodies = np.random.choice(BODYTYPES, size=4, replace=False)
     colors = np.random.choice(COLORS, size=4, replace=False)
     missions = np.random.choice(MISSIONS, size=4, replace=False)
     personalities = np.random.choice(PERSONALITY, size=4, replace=False)
-    starting = random.randint(1,4)
+    # TODO: fix starting player randomization, now it's 1 for testing
+    starting = random.randint(1,4)*0+1
     TURNO = starting
     print("Generated missions: ", missions)
     print("Generated bodies: ", bodies)
@@ -156,10 +161,12 @@ manager = ConnectionManager()
 
 @app.websocket("/ws")
 async def ws_endpoint(websocket: WebSocket):
+    global TURNO
     client_id = await manager.connect(websocket)
     client_ids.append(client_id)
     # comunico al client il suo id (utile per mandare messaggi mirati)
     await manager.send_to(client_id, {"type": "update_id", "client_id": client_id})
+    await manager.broadcast({"type": "game_action", "data": {"turn": TURNO}})
     try:
         while True:
             # opzionale: ricevere messaggi dal client
@@ -194,6 +201,41 @@ async def ws_endpoint(websocket: WebSocket):
                 TURNO += 1
                 if TURNO >= 4:
                     TURNO = 0
+            elif msg["type"] == "ping":
+                await manager.send_to(client_id, {"type": "ping"})
+            elif msg["type"] == "pong":
+                await manager.send_to(client_id, {"type": "pong"})
+            elif msg["type"] == "test":
+                await manager.send_to(client_id, {"type": "test", "data": "Test received"})
+            elif msg["type"] == "__can_move_piece":
+                piece_id = msg["data"]["piece_id"]
+                piece_color = piece_id.split("_")[0]
+                to_step = msg["data"]["to_step"]
+                from_step = msg["data"]["from_step"]
+                using_move = msg["data"]["using_move"]
+                player_key = msg["data"]["player_key"]
+                player = list(filter(lambda p: p.key == player_key, Players))[0]
+                if piece_color != player.color:
+                    await manager.send_to(client_id, {"type": "__can_move_piece", "status": "wrong_color"})
+                    continue
+                if TURNO != player.player_turn:
+                    await manager.send_to(client_id, {"type": "__can_move_piece", "status": "not_your_turn"})
+                    continue
+                if f"step_{to_step}" in steps["connections"][f"step_{from_step}"]["sea"] or f"step_{to_step}" in steps["connections"][f"step_{from_step}"]["land"]:
+                    print("MOVE CHECK PASSED")
+                    print(steps["connections"][f"step_{from_step}"])
+                    print("Checking move for player key: ", player_key)
+                    print("Piece ID: ", piece_id)
+                    print("From step: ", from_step)
+                    print("To step: ", to_step)
+                    print("Using move: ", using_move)
+                    # Here you would implement the actual game logic to check if the move is valid
+                    # For now, we will just return "ok"
+                    await manager.send_to(client_id, {"type": "_can_move_piece", "status": "ok"})
+                else:
+                    print(f"step_{to_step} not in connections of step_{from_step}")
+                    await manager.send_to(client_id, {"type": "__can_move_piece", "status": "invalid_move"})
+                    continue
 
 
     except WebSocketDisconnect:
