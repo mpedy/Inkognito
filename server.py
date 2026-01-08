@@ -8,15 +8,17 @@ from typing import Dict
 import uuid
 import numpy as np #replaceable for random.choice without replacement
 
-NUM_BIANCHE = 3
-NUM_NERE = 2
-NUM_ROSSE = 2
-NUM_BLU = 2
-NUM_GIALLE = 1
-NUM_TOTALE = NUM_BIANCHE + NUM_NERE + NUM_ROSSE + NUM_BLU + NUM_GIALLE
+history = {}
+
+NUM_WHITE = 3
+NUM_BLACK = 2
+NUM_RED = 2
+NUM_BLUE = 2
+NUM_YELLOW = 1
+NUM_TOTAL = NUM_WHITE + NUM_BLACK + NUM_RED + NUM_BLUE + NUM_YELLOW
 
 def profetizza():
-    profezia = ['bianca'] * NUM_BIANCHE + ['nera'] * NUM_NERE + ['rossa'] * NUM_ROSSE + ['blu'] * NUM_BLU + ['gialla'] * NUM_GIALLE
+    profezia = ['white'] * NUM_WHITE + ['black'] * NUM_BLACK + ['red'] * NUM_RED + ['blue'] * NUM_BLUE + ['yellow'] * NUM_YELLOW
     random.shuffle(profezia)
     return profezia[:3]
 
@@ -80,6 +82,7 @@ Players = [Player1, Player2, Player3, Player4]
 
 def createNewPlayers():
     global TURNO
+    global history
     bodies = np.random.choice(BODYTYPES, size=4, replace=False)
     colors = np.random.choice(COLORS, size=4, replace=False)
     missions = np.random.choice(MISSIONS, size=4, replace=False)
@@ -104,6 +107,7 @@ def createNewPlayers():
     Player2.setAttribute(colors[1], bodies[1], missions[1], personalities[1])
     Player3.setAttribute(colors[2], bodies[2], missions[2], personalities[2])
     Player4.setAttribute(colors[3], bodies[3], missions[3], personalities[3])
+    history = { TURNO: {}}
 
 createNewPlayers()
 
@@ -197,10 +201,6 @@ async def ws_endpoint(websocket: WebSocket):
                     await manager.RequestPlayersInfo()
             elif msg["type"] == "request_players_info":
                 await manager.RequestPlayersInfo()
-            elif msg["type"] == "game_action":
-                TURNO += 1
-                if TURNO >= 4:
-                    TURNO = 0
             elif msg["type"] == "ping":
                 await manager.send_to(client_id, {"type": "ping"})
             elif msg["type"] == "pong":
@@ -208,11 +208,16 @@ async def ws_endpoint(websocket: WebSocket):
             elif msg["type"] == "test":
                 await manager.send_to(client_id, {"type": "test", "data": "Test received"})
             elif msg["type"] == "__can_move_piece":
+                def checkLandMove(from_step, to_step):
+                    return f"step_{to_step}" in steps["connections"][f"step_{from_step}"]["land"]
+                def checkSeaMove(from_step, to_step):
+                    return f"step_{to_step}" in steps["connections"][f"step_{from_step}"]["sea"]
                 piece_id = msg["data"]["piece_id"]
                 piece_color = piece_id.split("_")[0]
                 to_step = msg["data"]["to_step"]
                 from_step = msg["data"]["from_step"]
                 using_move = msg["data"]["using_move"]
+                move_index = msg["data"]["move_index"]
                 player_key = msg["data"]["player_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]
                 if piece_color != player.color:
@@ -221,7 +226,10 @@ async def ws_endpoint(websocket: WebSocket):
                 if TURNO != player.player_turn:
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "not_your_turn"})
                     continue
-                if f"step_{to_step}" in steps["connections"][f"step_{from_step}"]["sea"] or f"step_{to_step}" in steps["connections"][f"step_{from_step}"]["land"]:
+                if (((checkSeaMove(from_step, to_step) or checkLandMove(from_step, to_step)) and using_move == "yellow") \
+                    or (checkLandMove(from_step, to_step) and using_move == "red") \
+                    or (checkSeaMove(from_step, to_step) and using_move == "blue")) \
+                    and len(history[TURNO]["prophecy_used"]) <3:
                     print("MOVE CHECK PASSED")
                     print(steps["connections"][f"step_{from_step}"])
                     print("Checking move for player key: ", player_key)
@@ -229,13 +237,46 @@ async def ws_endpoint(websocket: WebSocket):
                     print("From step: ", from_step)
                     print("To step: ", to_step)
                     print("Using move: ", using_move)
+                    print("Move index: ", move_index)
                     # Here you would implement the actual game logic to check if the move is valid
                     # For now, we will just return "ok"
-                    await manager.send_to(client_id, {"type": "_can_move_piece", "status": "ok"})
+                    history[TURNO]["prophecy_used"].append(move_index)
+                    await manager.send_to(client_id, {"type": "__can_move_piece", "status": "ok", **history[TURNO]})
                 else:
-                    print(f"step_{to_step} not in connections of step_{from_step}")
-                    await manager.send_to(client_id, {"type": "__can_move_piece", "status": "invalid_move"})
+                    if using_move == "red" and not checkLandMove(from_step, to_step):
+                        await manager.send_to(client_id, {"type": "__can_move_piece", "status": "invalid_land_move"})
+                    elif using_move == "blue" and not checkSeaMove(from_step, to_step):
+                        await manager.send_to(client_id, {"type": "__can_move_piece", "status": "invalid_sea_move"})
+                    else:
+                        print(f"step_{to_step} not in connections of step_{from_step}")
+                        await manager.send_to(client_id, {"type": "__can_move_piece", "status": "invalid_move"})
                     continue
+            elif msg["type"] == "__start_turn":
+                player_key = msg["data"]["player_key"]
+                player = list(filter(lambda p: p.key == player_key, Players))[0]
+                if TURNO != player.player_turn:
+                    await manager.send_to(client_id, {"type": "__start_turn", "status": "not_your_turn", **history[TURNO]})
+                    continue
+                elif history[TURNO].get("turn", None) == "not_finished":
+                    await manager.send_to(client_id, {"type": "__start_turn", "status": "turn_not_finished", **history[TURNO]})
+                    continue
+                else:
+                    prophecy_result = profetizza()
+                    print("Profetizza result: ", prophecy_result)
+                    await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
+                    history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
+            elif msg["type"] == "end_turn":
+                player_key = msg["data"]["player_key"]
+                player = list(filter(lambda p: p.key == player_key, Players))[0]
+                if TURNO != player.player_turn:
+                    await manager.send_to(client_id, {"type": "end_turn", "status": "not_your_turn", **history[TURNO]})
+                    continue
+                else:
+                    history[TURNO]["turn"] = "finished"
+                    TURNO+=1
+                    if TURNO > 4:
+                        TURNO = 1
+                    await manager.send_to(client_id, {"type": "end_turn", "status": "ok", **history[TURNO]})
 
 
     except WebSocketDisconnect:

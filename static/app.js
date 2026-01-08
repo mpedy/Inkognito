@@ -37,7 +37,7 @@ class Communication{
     constructor(){
         // Quando ci sarà una chiave univoca per il gioco (room):
         //this.ws = new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws_"+window.location.pathname);
-        this.ws = new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws");
+        this.ws = this.startWebSocket()
         this.connections = [];
         this.ws.onmessage = (event) => {
             const message = JSON.parse(event.data);
@@ -47,7 +47,16 @@ class Communication{
                 }
             }
         }
+        this.ws.onclose = (event) => {
+            console.log("WebSocket closed, attempting to reconnect in 3 seconds...");
+            setTimeout(() => {
+                this.ws = this.startWebSocket();
+            }, 3000);
+        };
     };
+    startWebSocket(){
+        return new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws");
+    }
     startPingPong(interval){
         setInterval(() => {
             this.sendCraftedMessage("ping");
@@ -194,6 +203,8 @@ class GameUI{
         this.pieces_width = 30;
         this.board = undefined;
         this.game = game;
+        this.prophecyUIElem = document.getElementById("prophecy_ui");
+        this.prophecyUIElem.querySelector("#start_turn").addEventListener("click", this.game.startTurn.bind(this.game));
     };
     highlightPiece(pieceElem){
         pieceElem.children[0].classList.toggle("selected");
@@ -224,6 +235,38 @@ class GameUI{
         pieceElem.setAttribute("data-step", toStep.split("step_")[1]);
         pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
     };
+    showProphecyResults(results){
+        let balls = this.prophecyUIElem.querySelectorAll(".prophecy_ball");
+        for(let i=0; i<balls.length; i++){
+            balls[i].style.backgroundColor = results[i];
+            balls[i].setAttribute("data-color", results[i]);
+            if(results[i] !== "white"){
+                balls[i].addEventListener("click", function(){this.game.balls[i].getAttribute("data-used") === "1" ? null : this.game.selectMove(i)}.bind(this, i));
+            }else{
+                balls[i].style.cursor = "not-allowed";
+            }
+        }
+    };
+    useProphecy(mv){
+        if(!this.game.balls){
+            this.game.balls = this.prophecyUIElem.querySelectorAll(".prophecy_ball");
+        }
+        this.game.balls[mv].style.opacity = "0.3";
+        this.game.balls[mv].style.cursor = "not-allowed";
+        this.game.balls[mv].setAttribute("data-used", "1");
+    };
+    selectMove(mv){
+        if(!this.game.balls){
+            this.game.balls = this.prophecyUIElem.querySelectorAll(".prophecy_ball");
+        }
+        this.game.balls[mv].classList.toggle("selected_move");
+        for(let i=0; i<this.game.balls.length; i++){
+            if(i !== mv){
+                this.game.balls[i].classList.remove("selected_move");
+            }
+        }
+    };
+
 }
 
 class Game{
@@ -247,20 +290,24 @@ class Game{
         this.debug = true;
         this.pieceClicked = null;
         this.moves = [];
+        this.moveSelected = null;
+        this.balls = document.querySelectorAll(".prophecy_ball");
         this.handlers = {
             "stepClicked": function(stepIndex, stepElem){
                 console.log("Step clicked: "+stepIndex);
                 if(true){//Condition on prophecy results, for now leave it true
-                    if(this.pieceClicked){
+                    if(this.pieceClicked && this.moves[this.moveSelected] != null){
                         this.comm.sendAndWait("__can_move_piece", {
                             "piece_id": this.pieceClicked.id,
                             "from_step": this.pieceClicked.getAttribute("data-step"),
                             "to_step": stepIndex,
-                            "using_move": MOVES["yellow"].toString().split("Symbol(")[1].split(")")[0], // For now always yellow move
+                            "using_move": this.balls[this.moveSelected].getAttribute("data-color"),
+                            "move_index": this.moveSelected,
                             "player_key": this.me.key
                         }).then((response) => {
                             response = JSON.parse(response);
                             if(response["status"] == "ok"){
+                                this.useMove(this.moveSelected);
                                 this.gameUI.movePieceFromStepToStep(
                                     this.pieceClicked.id.split("_")[0],
                                     this.pieceClicked.id.split("_")[1],
@@ -293,6 +340,41 @@ class Game{
         };
         this.setup();
     };
+    selectMove(mv){
+        console.log("Selected move: ", mv);
+        if(this.moveSelected == mv){
+            this.moveSelected = null;
+        }else{
+            this.moveSelected = mv;
+        }
+        this.gameUI.selectMove(mv);
+    }
+    endTurn(){
+        this.comm.sendCraftedMessage("end_turn");
+    }
+    startTurn(){
+        this.comm.sendAndWait("__start_turn", {
+            "player_key": this.me.key
+        }).then((response) => {
+            response = JSON.parse(response);
+            if(response["status"] == "ok"){
+                this.moves = response["prophecy"];
+                console.log("Available moves: ", this.moves);
+                this.gameUI.showProphecyResults(this.moves);
+            }else{
+                console.log(response);
+                this.moves = response["prophecy"];
+                this.gameUI.showProphecyResults(this.moves);
+                for(var i of response["prophecy_used"]){
+                    this.useMove(i);
+                }
+            }
+        });
+    }
+    useMove(mv){
+        this.moves[mv] = null;
+        this.gameUI.useProphecy(mv);
+    }
     generateSteps(){
         this.board = document.getElementById("board");
         this.board.addEventListener("load", () => {
