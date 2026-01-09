@@ -532,6 +532,9 @@
          circle.selected{
             display: inline !important;
          }
+         g.captured{
+            display: none;
+         }
       </style>
     </g>
   </g>

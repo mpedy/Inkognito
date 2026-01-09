@@ -56,26 +56,35 @@
             </div>
         </div>
     </div>
-    <div id="captured_pieces">
-        <div id="red_tall_captured" class="hidden"><img style="height: 100%" src="static/red_tall.png" id="red_tall_captured_img"/></div>
-        <div id="red_medium_captured" class="hidden"><img style="height: 100%" src="static/red_medium.png" id="red_medium_captured_img"/></div>
-        <div id="red_large_captured" class="hidden"><img style="height: 100%" src="static/red_large.png" id="red_large_captured_img"/></div>
-        <div id="red_short_captured" class="hidden"><img style="height: 100%" src="static/red_short.png" id="red_short_captured_img"/></div>
+    <div id="captured_pieces_container">
+        <div id="captured_pieces">
+            <div id="red_tall_captured" data-piece-id="red_tall" class="capturedpiece hidden"><img style="height: 80%" src="static/red_tall.png" id="red_tall_captured_img"/></div>
+            <div id="red_medium_captured" data-piece-id="red_medium" class="capturedpiece hidden"><img style="height: 80%" src="static/red_medium.png" id="red_medium_captured_img"/></div>
+            <div id="red_large_captured" data-piece-id="red_large" class="capturedpiece hidden"><img style="height: 80%" src="static/red_large.png" id="red_large_captured_img"/></div>
+            <div id="red_short_captured" data-piece-id="red_short" class="capturedpiece hidden"><img style="height: 80%" src="static/red_short.png" id="red_short_captured_img"/></div>
 
-        <div id="green_tall_captured" class="hidden"><img style="height: 100%" src="static/green_tall.png" id="green_tall_captured_img"/></div>
-        <div id="green_medium_captured" class="hidden"><img style="height: 100%" src="static/green_medium.png" id="green_medium_captured_img"/></div>
-        <div id="green_large_captured" class="hidden"><img style="height: 100%" src="static/green_large.png" id="green_large_captured_img"/></div>
-        <div id="green_short_captured" class="hidden"><img style="height: 100%" src="static/green_short.png" id="green_short_captured_img"/></div>
+            <div id="green_tall_captured" data-piece-id="green_tall" class="capturedpiece hidden"><img style="height: 80%" src="static/green_tall.png" id="green_tall_captured_img"/></div>
+            <div id="green_medium_captured" data-piece-id="green_medium" class="capturedpiece hidden"><img style="height: 80%" src="static/green_medium.png" id="green_medium_captured_img"/></div>
+            <div id="green_large_captured" data-piece-id="green_large" class="capturedpiece hidden"><img style="height: 80%" src="static/green_large.png" id="green_large_captured_img"/></div>
+            <div id="green_short_captured" data-piece-id="green_short" class="capturedpiece hidden"><img style="height: 80%" src="static/green_short.png" id="green_short_captured_img"/></div>
 
-        <div id="yellow_tall_captured" class="hidden"><img style="height: 100%" src="static/yellow_tall.png" id="yellow_tall_captured_img"/></div>
-        <div id="yellow_medium_captured" class="hidden"><img style="height: 100%" src="static/yellow_medium.png" id="yellow_medium_captured_img"/></div>
-        <div id="yellow_large_captured" class="hidden"><img style="height: 100%" src="static/yellow_large.png" id="yellow_large_captured_img"/></div>
-        <div id="yellow_short_captured" class="hidden"><img style="height: 100%" src="static/yellow_short.png" id="yellow_short_captured_img"/></div>
+            <div id="yellow_tall_captured" data-piece-id="yellow_tall" class="capturedpiece hidden"><img style="height: 80%" src="static/yellow_tall.png" id="yellow_tall_captured_img"/></div>
+            <div id="yellow_medium_captured" data-piece-id="yellow_medium" class="capturedpiece hidden"><img style="height: 80%" src="static/yellow_medium.png" id="yellow_medium_captured_img"/></div>
+            <div id="yellow_large_captured" data-piece-id="yellow_large" class="capturedpiece hidden"><img style="height: 80%" src="static/yellow_large.png" id="yellow_large_captured_img"/></div>
+            <div id="yellow_short_captured" data-piece-id="yellow_short" class="capturedpiece hidden"><img style="height: 80%" src="static/yellow_short.png" id="yellow_short_captured_img"/></div>
 
-        <div id="blue_tall_captured" class="hidden"><img style="height: 100%" src="static/blue_tall.png" id="blue_tall_captured_img"/></div>
-        <div id="blue_medium_captured" class="hidden"><img style="height: 100%" src="static/blue_medium.png" id="blue_medium_captured_img"/></div>
-        <div id="blue_large_captured" class="hidden"><img style="height: 100%" src="static/blue_large.png" id="blue_large_captured_img"/></div>
-        <div id="blue_short_captured" class="hidden"><img style="height: 100%" src="static/blue_short.png" id="blue_short_captured_img"/></div>
+            <div id="blue_tall_captured" data-piece-id="blue_tall" class="capturedpiece hidden"><img style="height: 80%" src="static/blue_tall.png" id="blue_tall_captured_img"/></div>
+            <div id="blue_medium_captured" data-piece-id="blue_medium" class="capturedpiece hidden"><img style="height: 80%" src="static/blue_medium.png" id="blue_medium_captured_img"/></div>
+            <div id="blue_large_captured" data-piece-id="blue_large" class="capturedpiece hidden"><img style="height: 80%" src="static/blue_large.png" id="blue_large_captured_img"/></div>
+            <div id="blue_short_captured" data-piece-id="blue_short" class="capturedpiece hidden"><img style="height: 80%" src="static/blue_short.png" id="blue_short_captured_img"/></div>
+        </div>
+        <div id="capture_choice" class="hidden">
+            Choice:
+            <div>
+                <button id="what">What</button>
+                <button id="who">Who</button>
+            </div>
+        </div>
     </div>
     <div id="canovaccio">
         <div>
