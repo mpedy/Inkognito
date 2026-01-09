@@ -223,6 +223,14 @@ class GameUI{
             "yellow_medium": "static/yellow_medium.png",
             "yellow_large": "static/yellow_large.png"
         }
+        this.prisonUIElem = document.getElementById("captured_pieces");
+        this.prisonUIElem.querySelectorAll("div.capturedpiece").forEach(elem => {
+            elem.addEventListener("click", this.game.handlers["capturedPieceClicked"].bind(this.game, elem.getAttribute("data-piece-id"), elem));
+        });
+        this.whatBtn = document.getElementById("what");
+        this.whoBtn = document.getElementById("who");
+        this.whatBtn.addEventListener("click", this.game.handlers["whatOrWhoClicked"].bind(this.game, "what"));
+        this.whoBtn.addEventListener("click", this.game.handlers["whatOrWhoClicked"].bind(this.game, "who"));
     };
     highlightPiece(pieceElem){
         pieceElem.children[0].classList.toggle("selected");
@@ -302,12 +310,15 @@ class GameUI{
         let pieceElem = this.board.getElementById(pieceId);
         pieceElem.classList.add("captured");
         document.getElementById(`${pieceId}_captured`).classList.remove("hidden");
+        this.game.capturedPieces.push(pieceId);
+        //if(this.)
     }
 
 }
 
 class Game{
     constructor(){
+        this.setupHandlers();
         this.comm = new Communication();
         this.cookieManager = new CookieManager();
         this.me = new Player();
@@ -329,6 +340,10 @@ class Game{
         this.moves = [];
         this.moveSelected = null;
         this.balls = document.querySelectorAll(".prophecy_ball");
+        this.capturedPieces = [];
+        this.setup();
+    };
+    setupHandlers(){
         this.handlers = {
             "stepClicked": function(stepIndex, stepElem){
                 console.log("Step clicked: "+stepIndex);
@@ -381,10 +396,46 @@ class Game{
                         this.pieceClicked = pieceElem;
                     }
                 }
+            },
+            "capturedPieceClicked": function(pieceId, pieceElem){
+                console.log("Captured piece clicked: ", pieceId);
+                if(!this.capturedPieceSelected){
+                    this.capturedPieceSelected = pieceElem;
+                    document.getElementById("capture_choice").classList.remove("hidden");
+                }else{
+                    if(this.capturedPieceSelected === pieceElem){
+                        this.capturedPieceSelected = null;
+                        document.getElementById("capture_choice").classList.add("hidden");
+                    }else{
+                        this.capturedPieceSelected.classList.toggle("selected");
+                        this.capturedPieceSelected = pieceElem;
+                        document.getElementById("capture_choice").classList.remove("hidden");
+                    }
+                }
+                pieceElem.classList.toggle("selected");
+            },
+            "whatOrWhoClicked": function(action_type){
+                let pieceId = this.capturedPieceSelected.getAttribute("data-piece-id");
+                console.log("What clicked for captured piece: ", pieceId);
+                this.comm.sendAndWait("__action", {
+                    "action_type": action_type,
+                    "piece_id": pieceId,
+                    "player_key": this.me.key
+                }).then(function(response){
+                    response = JSON.parse(response);
+                    console.log(response);
+                    if(response["status"] == "ok"){
+                        //TODO: update UI accordingly
+                        // Response contains key for waiting for player answer, meanwhile server messages other players with my requests
+                        this.comm.sendAndWait(response["wait_key"]).then(function(final_response){
+                            final_response = JSON.parse(final_response);
+                            console.log(final_response);
+                        })
+                    }
+                })
             }
         };
-        this.setup();
-    };
+    }
     selectMove(mv){
         console.log("Selected move: ", mv);
         if(this.moveSelected == mv){
@@ -412,6 +463,11 @@ class Game{
                 this.gameUI.showProphecyResults(this.moves);
                 for(var i of response["prophecy_used"]){
                     this.useMove(i);
+                }
+                if(response["talks"].length > 0){
+                    for(var talk of response["talks"]){
+                        this.gameUI.capturePiece(talk["between"][1]);
+                    }
                 }
             }
         });
@@ -450,7 +506,7 @@ class Game{
             console.log("Ping received: ", message)
             comm.sendCraftedMessage("pong");
         })
-        this.comm.startPingPong(30000);
+        this.comm.startPingPong(600000);
         this.comm.addConnection("register_player",(comm,message)=>{
             this.me.bodytype = BodyTypes[message["player_info"]["bodytype"].toUpperCase()];
             this.me.color = Colors[message["player_info"]["color"].toUpperCase()];

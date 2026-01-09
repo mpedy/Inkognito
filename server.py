@@ -86,6 +86,10 @@ class Player:
         color = self.color
         piece = self.getPieceFromPosition(step)
         return f"{color}_{piece}"
+    def __str__(self):
+        return f"Player {self.player_turn} - Color: {self.color}, Body: {self.bodytype}, Mission: {self.mission}, Personality: {self.personality}, Key: {self.key}, Positions: {self.positions}"
+    def __repr__(self):
+        return self.__str__()
 
 Player1 = Player(1)
 Player2 = Player(2)
@@ -282,6 +286,35 @@ async def ws_endpoint(websocket: WebSocket):
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
                     history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
+            elif msg["type"] == "__action":
+                action_type = msg["data"]["action_type"]
+                piece_id = msg["data"]["piece_id"]
+                piece_color = piece_id.split("_")[0]
+                player_key = msg["data"]["player_key"]
+                player = list(filter(lambda p: p.key == player_key, Players))[0]
+                other_player = list(filter(lambda p: p.color == piece_color, Players))[0]
+                print("BETWEEN PLAYERS:")
+                print(player)
+                print(other_player)
+                betweens = []
+                for talk in history[TURNO]["talks"]:
+                    betweens+= talk["between"]
+                if TURNO != player.player_turn:
+                    await manager.send_to(client_id, {"type": "__action", "status": "not_your_turn", **history[TURNO]})
+                    continue
+                elif action_type not in ["what", "who"]:
+                    await manager.send_to(client_id, {"type": "__action", "status": "invalid_action_type", **history[TURNO]})
+                    continue
+                elif other_player.key == player.key:
+                    await manager.send_to(client_id, {"type": "__action", "status": "cannot_action_own_piece", **history[TURNO]})
+                    continue
+                elif piece_id not in betweens:
+                    await manager.send_to(client_id, {"type": "__action", "status": "piece_not_captured_this_turn", **history[TURNO]})
+                    continue
+                else:
+                    # TODO: generate secret key for waiting answer
+                    await manager.send_to(other_player.client_id, {"type": "__action", "action_type": action_type, "piece_id": piece_id, "from_player": player.player_turn, "wait_key": f"answer_{TURNO}_{len(history[TURNO]['talks'])}"})
+                    await manager.send_to(client_id, {"type": "__action", "status": "ok", **history[TURNO]})
             elif msg["type"] == "end_turn":
                 player_key = msg["data"]["player_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]
