@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import random
@@ -10,7 +10,7 @@ import numpy as np #replaceable for random.choice without replacement
 
 history = {}
 
-NUM_WHITE = 3
+NUM_WHITE = 2
 NUM_BLACK = 2
 NUM_RED = 2
 NUM_BLUE = 2
@@ -73,6 +73,19 @@ class Player:
             "starting": self.starting,
             "positions": self.positions
         }
+    def movePiece(self, from_step, to_step):
+        if from_step in self.positions:
+            self.positions[self.positions.index(from_step)] = to_step
+            return True
+        return False
+    def getPieceFromPosition(self, step):
+        return self.positions[self.positions.index(step)+4]
+    def getStepFromPiece(self, piece):
+        return self.positions[self.positions.index(piece)-4]
+    def getPieceIDFromPosition(self, step):
+        color = self.color
+        piece = self.getPieceFromPosition(step)
+        return f"{color}_{piece}"
 
 Player1 = Player(1)
 Player2 = Player(2)
@@ -114,18 +127,6 @@ createNewPlayers()
 @app.get("/")
 async def read_root():
     return HTMLResponse(open("index.html").read())
-
-@app.post("/move_piece")
-async def move_piece(request: Request, response: Response):
-    body = await request.json()
-    color = body["color"]
-    bodytype = body["bodytype"]
-    fromStep = body["fromStep"]
-    toStep = body["toStep"]
-    key = body["key"]
-    actual_player = list(filter(lambda p: p.key == key, Players))[0]
-    #if actual_player.key == key:
-
    
 
 class ConnectionManager:
@@ -214,22 +215,33 @@ async def ws_endpoint(websocket: WebSocket):
                     return f"step_{to_step}" in steps["connections"][f"step_{from_step}"]["sea"]
                 piece_id = msg["data"]["piece_id"]
                 piece_color = piece_id.split("_")[0]
-                to_step = msg["data"]["to_step"]
-                from_step = msg["data"]["from_step"]
+                to_step = int(msg["data"]["to_step"])
+                from_step = int(msg["data"]["from_step"])
                 using_move = msg["data"]["using_move"]
                 move_index = msg["data"]["move_index"]
                 player_key = msg["data"]["player_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]
-                if piece_color != player.color:
+                other_players_position = []
+                for p in Players:
+                    if p.key != player_key:
+                        other_players_position += p.positions
+                if piece_color != player.color and using_move != "black":
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "wrong_color"})
                     continue
                 if TURNO != player.player_turn:
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "not_your_turn"})
                     continue
-                if (((checkSeaMove(from_step, to_step) or checkLandMove(from_step, to_step)) and using_move == "yellow") \
+                if (\
+                    # Yellow move
+                    (((checkSeaMove(from_step, to_step) or checkLandMove(from_step, to_step)) and using_move == "yellow") \
+                    # Black move
+                    or ((checkSeaMove(from_step, to_step) or checkLandMove(from_step, to_step)) and using_move == "black" and piece_color == "ambassador" and (to_step in player.positions or to_step not in other_players_position)) \
+                    # Red move
                     or (checkLandMove(from_step, to_step) and using_move == "red") \
+                    # Blue move
                     or (checkSeaMove(from_step, to_step) and using_move == "blue")) \
-                    and len(history[TURNO]["prophecy_used"]) <3:
+                    # Check prophecy usage
+                    and len(history[TURNO]["prophecy_used"]) <3):
                     print("MOVE CHECK PASSED")
                     print(steps["connections"][f"step_{from_step}"])
                     print("Checking move for player key: ", player_key)
@@ -238,9 +250,13 @@ async def ws_endpoint(websocket: WebSocket):
                     print("To step: ", to_step)
                     print("Using move: ", using_move)
                     print("Move index: ", move_index)
-                    # Here you would implement the actual game logic to check if the move is valid
-                    # For now, we will just return "ok"
                     history[TURNO]["prophecy_used"].append(move_index)
+                    history[TURNO].setdefault("talks", [])
+                    if to_step in other_players_position or (using_move=="black" and to_step in player.positions):
+                        print(f"step_{to_step} occupied by another player, removing piece from the board")
+                        other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
+                        history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key]})
+                    player.movePiece(from_step, to_step)
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "ok", **history[TURNO]})
                 else:
                     if using_move == "red" and not checkLandMove(from_step, to_step):
@@ -262,6 +278,7 @@ async def ws_endpoint(websocket: WebSocket):
                     continue
                 else:
                     prophecy_result = profetizza()
+                    #prophecy_result = ["yellow", "yellow", "yellow"]  # for testing
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
                     history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
