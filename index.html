@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inkognito - Home</title>
+    <title>Inkognito</title>
     <link rel="stylesheet" href="/static/styles.css">
     <script>
         var canovaccio_visible = false;
+        var missions_visible = false;
         function showCanovaccio() {
             canovaccio_visible = !canovaccio_visible;
             if (canovaccio_visible) {
                 document.getElementById("canovaccio").style.left = "50%";
             } else {
                 document.getElementById("canovaccio").style.left = "-100%";
+            }
+        }
+
+        function showMissions() {
+            missions_visible = !missions_visible;
+            if (missions_visible) {
+                document.getElementById("missions").style.left = "50%";
+            } else {
+                document.getElementById("missions").style.left = "-100%";
             }
         }
     </script>
@@ -35,6 +45,7 @@
     <div id="player_info_ui_3"><div id="colordiv_3"></div><div id="bodytypediv_3"></div></div>
     <div id="controls">
         <button id="btn_canovaccio" onclick="showCanovaccio()">Show Canovaccio</button>
+        <button id="btn_missions" onclick="showMissions()">Show Missions</button>
         <div id="prophecy_ui">
             <button id="start_turn">Start Turn</button>
             <button id="end_turn">End Turn</button>
@@ -44,6 +55,27 @@
                 <div id="ball_3" class="prophecy_ball"></div>
             </div>
         </div>
+    </div>
+    <div id="captured_pieces">
+        <div id="red_tall_captured" class="hidden"><img style="height: 100%" src="static/red_tall.png" id="red_tall_captured_img"/></div>
+        <div id="red_medium_captured" class="hidden"><img style="height: 100%" src="static/red_medium.png" id="red_medium_captured_img"/></div>
+        <div id="red_large_captured" class="hidden"><img style="height: 100%" src="static/red_large.png" id="red_large_captured_img"/></div>
+        <div id="red_short_captured" class="hidden"><img style="height: 100%" src="static/red_short.png" id="red_short_captured_img"/></div>
+
+        <div id="green_tall_captured" class="hidden"><img style="height: 100%" src="static/green_tall.png" id="green_tall_captured_img"/></div>
+        <div id="green_medium_captured" class="hidden"><img style="height: 100%" src="static/green_medium.png" id="green_medium_captured_img"/></div>
+        <div id="green_large_captured" class="hidden"><img style="height: 100%" src="static/green_large.png" id="green_large_captured_img"/></div>
+        <div id="green_short_captured" class="hidden"><img style="height: 100%" src="static/green_short.png" id="green_short_captured_img"/></div>
+
+        <div id="yellow_tall_captured" class="hidden"><img style="height: 100%" src="static/yellow_tall.png" id="yellow_tall_captured_img"/></div>
+        <div id="yellow_medium_captured" class="hidden"><img style="height: 100%" src="static/yellow_medium.png" id="yellow_medium_captured_img"/></div>
+        <div id="yellow_large_captured" class="hidden"><img style="height: 100%" src="static/yellow_large.png" id="yellow_large_captured_img"/></div>
+        <div id="yellow_short_captured" class="hidden"><img style="height: 100%" src="static/yellow_short.png" id="yellow_short_captured_img"/></div>
+
+        <div id="blue_tall_captured" class="hidden"><img style="height: 100%" src="static/blue_tall.png" id="blue_tall_captured_img"/></div>
+        <div id="blue_medium_captured" class="hidden"><img style="height: 100%" src="static/blue_medium.png" id="blue_medium_captured_img"/></div>
+        <div id="blue_large_captured" class="hidden"><img style="height: 100%" src="static/blue_large.png" id="blue_large_captured_img"/></div>
+        <div id="blue_short_captured" class="hidden"><img style="height: 100%" src="static/blue_short.png" id="blue_short_captured_img"/></div>
     </div>
     <div id="canovaccio">
         <div>
@@ -424,6 +456,14 @@
                 <td><input type="text"/></td>
             </tr>
         </table>
+    </div>
+    <div id="missions">
+        <div>
+            <button id="btn_missions" onclick="showMissions()">X</button>
+        </div>
+        <div>
+            <img src="static/Missions.jpg"/>
+        </div>
     </div>
 
 
