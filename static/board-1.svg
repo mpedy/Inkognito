@@ -524,6 +524,10 @@
          <circle r="20" fill="white" stroke="#ff0000" stroke-width="4" cx="15" cy="15" style="pointer-events:none; display: none"/>
          <image id="blue_tall_img" href="blue_tall.png" width="30" height="30"/>
       </g>
+      <g id="ambassador_ambassador">
+         <circle r="20" fill="white" stroke="#FF0000" stroke-width="4" cx="15" cy="15" style="pointer-events:none; display: none"/>
+         <image id="ambassador_img" href="ambassador.png" width="30" height="30"/>
+      </g>
       <style>
          circle.selected{
             display: inline !important;
