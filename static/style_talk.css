@@ -1,0 +1,35 @@
+#talk_dialog{
+    position: absolute;
+    bottom: 0px;
+    height: 75%;
+    width: 50%;
+    left: -100%;
+    transform: translate(-50%, 0);
+    text-align: center;
+    background-color: white;
+    border: 2px solid black;
+    border-radius: 25px;
+
+}
+#talk_dialog > #my_cards{
+    width: 100%;
+    height: 85%;
+    display: flex;
+    flex-direction: column;
+}
+#talk_dialog > #my_cards > #bodytypes, #talk_dialog > #my_cards > #personalities, #talk_dialog > #my_cards > #truecards{
+    width: 100%;
+    height: 25%;
+    flex-grow: 1;
+}
+img.card.bodytype_card, img.card.personality_card, img.card.truecard{
+    height: 100%;
+}
+#talk_button{
+    padding: 8px;
+}
+#talk_button > #talk_button_send{
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}

@@ -8,6 +8,7 @@
     <script>
         var canovaccio_visible = false;
         var missions_visible = false;
+        var talk_dialog_visible = false;
         function showCanovaccio() {
             canovaccio_visible = !canovaccio_visible;
             if (canovaccio_visible) {
@@ -23,6 +24,15 @@
                 document.getElementById("missions").style.left = "50%";
             } else {
                 document.getElementById("missions").style.left = "-100%";
+            }
+        }
+
+        function showTalkDialog() {
+            talk_dialog_visible = !talk_dialog_visible;
+            if (talk_dialog_visible) {
+                document.getElementById("talk_dialog").style.left = "50%";
+            } else {
+                document.getElementById("talk_dialog").style.left = "-100%";
             }
         }
     </script>
@@ -46,6 +56,7 @@
     <div id="controls">
         <button id="btn_canovaccio" onclick="showCanovaccio()">Show Canovaccio</button>
         <button id="btn_missions" onclick="showMissions()">Show Missions</button>
+        <button id="btn_talk_dialog" onclick="showTalkDialog()">Show Talk Dialog</button>
         <div id="prophecy_ui">
             <button id="start_turn">Start Turn</button>
             <button id="end_turn">End Turn</button>
@@ -472,6 +483,33 @@
         </div>
         <div>
             <img src="static/Missions.jpg"/>
+        </div>
+    </div>
+    <div id="talk_dialog">
+        <div style="text-align: left;">
+            <button id="btn_canovaccio" onclick="showTalkDialog()">X</button>
+        </div>
+        <div id="my_cards">
+            <div id="bodytypes">
+                <img class="card bodytype_card" data-bodytype="TALL"/>
+                <img class="card bodytype_card" data-bodytype="MEDIUM"/>
+                <img class="card bodytype_card" data-bodytype="LARGE"/>
+                <img class="card bodytype_card" data-bodytype="SHORT"/>
+            </div>
+            <div id="personalities">
+                <img class="card personality_card" data-personality="Lord Fiddlebottom"/>
+                <img class="card personality_card" data-personality="Colonel Bubble"/>
+                <img class="card personality_card" data-personality="Madame Tsatsa"/>
+                <img class="card personality_card" data-personality="Agent X"/>
+            </div>
+            <div id="truecards">
+                <img class="card truecard" data-truecard="personality"/>
+                <img class="card truecard" data-truecard="bodytype"/>
+                <img class="card truecard" data-truecard="mission"/>
+            </div>
+        </div>
+        <div id="talk_button">
+            <button id="talk_button_send">Send</button>
         </div>
     </div>
 

@@ -25,12 +25,13 @@ const MOVES = Object.freeze({
 });
 
 class Player{
-    constructor(name,color,bodytype, personality){
+    constructor(name,color,bodytype, personality, mission){
         this.id = null;
         this.name=name;
         this.color=color;
         this.bodytype=bodytype;
         this.personality=personality;
+        this.mission=mission;
     }
 }
 class Communication{
@@ -112,8 +113,11 @@ class Communication{
 
 class CookieManager{
     constructor(){
-        this.key = (Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2)).substring(0,21);
-        this.setCookie("game_key", this.key, 365);
+        if(this.getCookie("game_key") === ""){
+            this.key = (Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2)).substring(0,21);
+            debugger;
+            this.setCookie("game_key", this.key, 365);
+        }
     };
     setCookie(cname, cvalue, exdays) {
         const d = new Date();
@@ -232,6 +236,25 @@ class GameUI{
         this.whatBtn.addEventListener("click", this.game.handlers["whatOrWhoClicked"].bind(this.game, "what"));
         this.whoBtn.addEventListener("click", this.game.handlers["whatOrWhoClicked"].bind(this.game, "who"));
     };
+    popolateTrueCards(){
+        this.myCardsElem = document.getElementById("my_cards");
+        this.myCardsElem_bodytypes = this.myCardsElem.querySelector("#bodytypes");
+        this.myCardsElem_personalities = this.myCardsElem.querySelector("#personalities");
+        this.myCardsElem_truecards = this.myCardsElem.querySelector("#truecards");
+        let color = this.game.getMyColor();
+        let bodytype = this.game.getMyBodytype();
+        let personality = this.game.getMyPersonality();
+        let mission = this.game.me.mission;
+        for(let i of Object.keys(BodyTypes)){
+            this.myCardsElem_bodytypes.querySelector("img[data-bodytype='"+i+"']").src = "static/"+color+"_"+i.toLowerCase()+".png";
+        }
+        for(let i of Object.keys(Personality)){
+            this.myCardsElem_personalities.querySelector("img[data-personality='"+i+"']").src = "static/"+color+"_"+i.toLowerCase().replaceAll(" ","_")+".png";
+        }
+        this.myCardsElem_truecards.querySelector("img[data-truecard='mission']").src = "static/mission_"+mission+".png";
+        this.myCardsElem_truecards.querySelector("img[data-truecard='bodytype']").src = "static/white_"+bodytype+".png";
+        this.myCardsElem_truecards.querySelector("img[data-truecard='personality']").src = "static/white_"+personality.toLowerCase().replaceAll(" ","_")+".png";
+    };
     highlightPiece(pieceElem){
         pieceElem.children[0].classList.toggle("selected");
         pieceElem.children[1].classList.toggle("selected");
@@ -311,8 +334,15 @@ class GameUI{
         pieceElem.classList.add("captured");
         document.getElementById(`${pieceId}_captured`).classList.remove("hidden");
         this.game.capturedPieces.push(pieceId);
-        //if(this.)
-    }
+        //TODO: ambassador capture handling
+    };
+    showCardsForTalk(action_type, piece_id, from_player, talk_key){
+        document.getElementById("talk_dialog").classList.remove("hidden");
+        document.getElementById("talk_dialog_action_type").innerText = action_type;
+        document.getElementById("talk_dialog_piece_id").innerText = piece_id;
+        document.getElementById("talk_dialog_from_player").innerText = from_player;
+        document.getElementById("talk_dialog_talk_key").innerText = talk_key;
+    };
 
 }
 
@@ -343,6 +373,15 @@ class Game{
         this.capturedPieces = [];
         this.setup();
     };
+    getMyColor(){
+        return this.me.color.toString().split("Symbol(")[1].split(")")[0];
+    };
+    getMyBodytype(){
+        return this.me.bodytype.toString().split("Symbol(")[1].split(")")[0];
+    };
+    getMyPersonality(){
+        return this.me.personality.toString().split("Symbol(")[1].split(")")[0];
+    }
     setupHandlers(){
         this.handlers = {
             "stepClicked": function(stepIndex, stepElem){
@@ -417,6 +456,7 @@ class Game{
             "whatOrWhoClicked": function(action_type){
                 let pieceId = this.capturedPieceSelected.getAttribute("data-piece-id");
                 console.log("What clicked for captured piece: ", pieceId);
+                let comm = this.comm;
                 this.comm.sendAndWait("__action", {
                     "action_type": action_type,
                     "piece_id": pieceId,
@@ -427,12 +467,21 @@ class Game{
                     if(response["status"] == "ok"){
                         //TODO: update UI accordingly
                         // Response contains key for waiting for player answer, meanwhile server messages other players with my requests
-                        this.comm.sendAndWait(response["wait_key"]).then(function(final_response){
+                        comm.sendAndWait("__" + response["talk_key"]).then(function(final_response){
                             final_response = JSON.parse(final_response);
                             console.log(final_response);
                         })
                     }
                 })
+            },
+            "action_talk": function(message){
+                console.log("Talk action received: ", message);
+                action_type = message["action_type"]
+                piece_id = message["piece_id"]
+                from_player = message["from_player"]
+                talk_key = message["talk_key"]
+                // Show dialog to answer to talk
+                this.gameUI.showCardsForTalk(action_type, piece_id, from_player, talk_key);
             }
         };
     }
@@ -453,6 +502,9 @@ class Game{
             "player_key": this.me.key
         }).then((response) => {
             response = JSON.parse(response);
+            if(response["status"] == "not_your_turn"){
+                return;
+            }
             if(response["status"] == "ok"){
                 this.moves = response["prophecy"];
                 console.log("Available moves: ", this.moves);
@@ -511,10 +563,12 @@ class Game{
             this.me.bodytype = BodyTypes[message["player_info"]["bodytype"].toUpperCase()];
             this.me.color = Colors[message["player_info"]["color"].toUpperCase()];
             this.me.personality = Personality[message["player_info"]["personality"]];
+            this.me.mission = message["player_info"]["mission"];
             this.playerUI.setColor(this.me.color);
             this.playerUI.setBodyType(this.me.bodytype);
             this.playerUI.setPersonality(this.me.personality);
             this.playerUI.setImg(message["player_info"]["color"], message["player_info"]["bodytype"], message["player_info"]["mission"]);
+            this.gameUI.popolateTrueCards();
         });
         this.comm.sendMessage(JSON.stringify({
             "type": "register_player",
@@ -522,21 +576,23 @@ class Game{
         }));
         // Request players info from server
         this.comm.addConnection("request_players_info",(comm,message)=>{
+            let index = 0;
             for(var p=0; p < message["players"].length; p++){
                 if( this.me.key !== message["players"][p]["key"] ){
-                    this.players[p].id = message["players"][p]["id"];
-                    this.players[p].name = message["players"][p]["name"];
-                    this.players[p].color = Colors[message["players"][p]["color"].toUpperCase()];
-                    this.players[p].bodytype = BodyTypes[message["players"][p]["bodytype"].toUpperCase()];
-                    this.players[p].personality = Personality[message["players"][p]["personality"]];
-                    this.players[p].playerUI.setColor(this.players[p].color);
-                    this.players[p].playerUI.setBodyType(this.players[p].bodytype);
+                    index += 1;
+                    this.players[index].id = message["players"][index]["id"];
+                    this.players[index].name = message["players"][index]["name"];
+                    this.players[index].color = Colors[message["players"][index]["color"].toUpperCase()];
+                    this.players[index].bodytype = BodyTypes[message["players"][index]["bodytype"].toUpperCase()];
+                    this.players[index].personality = Personality[message["players"][index]["personality"]];
+                    this.players[index].playerUI.setColor(this.players[index].color);
+                    this.players[index].playerUI.setBodyType(this.players[index].bodytype);
                 }
                 for(var i=0; i<4; i++){
                     this.gameUI.addPieceToStep(message["players"][p]["color"], message["players"][p]["positions"][i+4], message["players"][p]["positions"][i], this.board.contentDocument);
                 }
-                this.gameUI.addAmbassyPiece();
             }
+            this.gameUI.addAmbassyPiece();
         });
         this.comm.sendCraftedMessage("request_players_info");
     };

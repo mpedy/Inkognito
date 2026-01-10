@@ -22,6 +22,9 @@ def profetizza():
     random.shuffle(profezia)
     return profezia[:3]
 
+def generateTalkKey():
+    return str(uuid.uuid4())
+
 TURNO = None
 
 app = FastAPI()
@@ -184,6 +187,13 @@ async def ws_endpoint(websocket: WebSocket):
             msg = json.loads(msg)
             if msg["type"] == "register_player":
                 key = msg["key"]
+                player = list(filter(lambda p: p.key == key, Players))
+                if len(player) > 0:
+                    player = player[0]
+                    player.client_id = client_id
+                    await manager.send_to(client_id, {"type": "register_player", "player_info": player.toDict()})
+                    await manager.RequestPlayersInfo()
+                    continue
                 if Player1.key is None:
                     Player1.key = key
                     Player1.client_id = client_id
@@ -274,6 +284,7 @@ async def ws_endpoint(websocket: WebSocket):
             elif msg["type"] == "__start_turn":
                 player_key = msg["data"]["player_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]
+                history[TURNO].setdefault("talks", [])
                 if TURNO != player.player_turn:
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "not_your_turn", **history[TURNO]})
                     continue
@@ -282,7 +293,7 @@ async def ws_endpoint(websocket: WebSocket):
                     continue
                 else:
                     prophecy_result = profetizza()
-                    #prophecy_result = ["yellow", "yellow", "yellow"]  # for testing
+                    prophecy_result = ["yellow", "yellow", "yellow"]  # for testing
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
                     history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
@@ -312,9 +323,23 @@ async def ws_endpoint(websocket: WebSocket):
                     await manager.send_to(client_id, {"type": "__action", "status": "piece_not_captured_this_turn", **history[TURNO]})
                     continue
                 else:
-                    # TODO: generate secret key for waiting answer
-                    await manager.send_to(other_player.client_id, {"type": "__action", "action_type": action_type, "piece_id": piece_id, "from_player": player.player_turn, "wait_key": f"answer_{TURNO}_{len(history[TURNO]['talks'])}"})
-                    await manager.send_to(client_id, {"type": "__action", "status": "ok", **history[TURNO]})
+                    talk_key = generateTalkKey()
+                    await manager.send_to(other_player.client_id, {"type": "action_talk", "action_type": action_type, "piece_id": piece_id, "from_player": player.player_turn, "talk_key": talk_key})
+                    await manager.send_to(client_id, {"type": "__action", "status": "ok", **history[TURNO], "talk_key": talk_key})
+            elif msg["type"] == "action_response":
+                # TODO: to review
+                talk_key = msg["data"]["talk_key"]
+                response = msg["data"]["response"]
+                player_turn = msg["data"]["player_turn"]
+                player_key = msg["data"]["player_key"]
+                response = msg["data"]["response"]
+                player = list(filter(lambda p: p.key == player_key, Players))[0]
+                if TURNO != player.player_turn:
+                    await manager.send_to(client_id, {"type": "action_response", "status": "not_your_turn", **history[TURNO]})
+                    continue
+                else:
+                    history[TURNO]["talks"].append({"type": "action_response", "talk_key": talk_key, "response": response})
+                    await manager.send_to(list(filter(lambda p: p.player_turn == player_turn, Players))[0].client_id, {"type": "action_response", "status": "ok", "response": response, **history[TURNO]})
             elif msg["type"] == "end_turn":
                 player_key = msg["data"]["player_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]
@@ -332,16 +357,16 @@ async def ws_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(client_id)
         if Player1.client_id == client_id:
-            Player1.key = None
+            #Player1.key = None
             Player1.client_id = None
         elif Player2.client_id == client_id:
-            Player2.key = None
+            #Player2.key = None
             Player2.client_id = None
         elif Player3.client_id == client_id:
-            Player3.key = None
+            #Player3.key = None
             Player3.client_id = None
         elif Player4.client_id == client_id:
-            Player4.key = None
+            #Player4.key = None
             Player4.client_id = None
 
 
