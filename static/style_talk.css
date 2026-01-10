@@ -21,6 +21,7 @@
     width: 100%;
     height: 25%;
     flex-grow: 1;
+    margin: 5px 0px;
 }
 img.card.bodytype_card, img.card.personality_card, img.card.truecard{
     height: 100%;
@@ -32,4 +33,12 @@ img.card.bodytype_card, img.card.personality_card, img.card.truecard{
     padding: 10px;
     border-radius: 10px;
     cursor: pointer;
+}
+#talk_request{
+    font-size: 18px;
+    margin: 10px;
+    color: black;
+}
+.card.selected_truecard{
+    outline: 5px solid gray;
 }
