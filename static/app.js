@@ -25,13 +25,14 @@ const MOVES = Object.freeze({
 });
 
 class Player{
-    constructor(name,color,bodytype, personality, mission){
+    constructor(name,color,bodytype, personality, mission,player_turn){
         this.id = null;
         this.name=name;
         this.color=color;
         this.bodytype=bodytype;
         this.personality=personality;
         this.mission=mission;
+        this.player_turn=player_turn;
     }
 }
 class Communication{
@@ -246,14 +247,25 @@ class GameUI{
         let personality = this.game.getMyPersonality();
         let mission = this.game.me.mission;
         for(let i of Object.keys(BodyTypes)){
-            this.myCardsElem_bodytypes.querySelector("img[data-bodytype='"+i+"']").src = "static/"+color+"_"+i.toLowerCase()+".png";
+            let bodytypeElem = this.myCardsElem_bodytypes.querySelector("img[data-bodytype='"+i+"']")
+            bodytypeElem.src = "static/"+color+"_"+i.toLowerCase()+".png";
+            bodytypeElem.addEventListener("click", this.game.handlers["talkRequestCardClicked"].bind(this.game, "bodytype", i, bodytypeElem));
         }
         for(let i of Object.keys(Personality)){
-            this.myCardsElem_personalities.querySelector("img[data-personality='"+i+"']").src = "static/"+color+"_"+i.toLowerCase().replaceAll(" ","_")+".png";
+            let personalityElem = this.myCardsElem_personalities.querySelector("img[data-personality='"+i+"']")
+            personalityElem.src = "static/"+color+"_"+i.toLowerCase().replaceAll(" ","_")+".png";
+            personalityElem.addEventListener("click", this.game.handlers["talkRequestCardClicked"].bind(this.game, "personality", i, personalityElem));
         }
-        this.myCardsElem_truecards.querySelector("img[data-truecard='mission']").src = "static/mission_"+mission+".png";
-        this.myCardsElem_truecards.querySelector("img[data-truecard='bodytype']").src = "static/white_"+bodytype+".png";
-        this.myCardsElem_truecards.querySelector("img[data-truecard='personality']").src = "static/white_"+personality.toLowerCase().replaceAll(" ","_")+".png";
+        let truecardElem = this.myCardsElem_truecards.querySelector("img[data-truecard='mission']")
+        truecardElem.src = "static/mission_"+mission+".png";
+        truecardElem.addEventListener("click", this.game.handlers["talkRequestCardClicked"].bind(this.game, "mission", mission, truecardElem));
+        truecardElem = this.myCardsElem_truecards.querySelector("img[data-truecard='bodytype']")
+        truecardElem.src = "static/white_"+bodytype+".png";
+        truecardElem.addEventListener("click", this.game.handlers["talkRequestCardClicked"].bind(this.game, "bodytype", bodytype, truecardElem));
+        truecardElem = this.myCardsElem_truecards.querySelector("img[data-truecard='personality']")
+        truecardElem.src = "static/white_"+personality.toLowerCase().replaceAll(" ","_")+".png";
+        truecardElem.addEventListener("click", this.game.handlers["talkRequestCardClicked"].bind(this.game, "personality", personality, truecardElem));
+        document.getElementById("talk_button_send").addEventListener("click", this.game.handlers["answerTalkRequest"].bind(this.game,document.getElementById("talk_button_send").getAttribute("data-from-player")));
     };
     highlightPiece(pieceElem){
         pieceElem.children[0].classList.toggle("selected");
@@ -337,11 +349,15 @@ class GameUI{
         //TODO: ambassador capture handling
     };
     showCardsForTalk(action_type, piece_id, from_player, talk_key){
-        document.getElementById("talk_dialog").classList.remove("hidden");
-        document.getElementById("talk_dialog_action_type").innerText = action_type;
-        document.getElementById("talk_dialog_piece_id").innerText = piece_id;
-        document.getElementById("talk_dialog_from_player").innerText = from_player;
-        document.getElementById("talk_dialog_talk_key").innerText = talk_key;
+        showTalkDialog();
+        this.game.talk_key = talk_key;
+        let talkButtonSend = document.getElementById("talk_button_send");
+        talkButtonSend.setAttribute("data-from-player", from_player);
+        talkButtonSend.setAttribute("data-talk-key", talk_key);
+        document.getElementById("talk_request").innerHTML ="<span>"+from_player+"</span> wants to know <span class='strong'>"+(action_type.toUpperCase())+"</span> you are!";
+    };
+    highlightTruecard(cardElem){
+        cardElem.classList.toggle("selected_truecard");
     };
 
 }
@@ -371,6 +387,8 @@ class Game{
         this.moveSelected = null;
         this.balls = document.querySelectorAll(".prophecy_ball");
         this.capturedPieces = [];
+        this.truecardSelected = [];
+        this.talk_key = undefined;
         this.setup();
     };
     getMyColor(){
@@ -467,7 +485,7 @@ class Game{
                     if(response["status"] == "ok"){
                         //TODO: update UI accordingly
                         // Response contains key for waiting for player answer, meanwhile server messages other players with my requests
-                        comm.sendAndWait("__" + response["talk_key"]).then(function(final_response){
+                        comm.sendAndWait(response["talk_key"],{"status": "waiting"}).then(function(final_response){
                             final_response = JSON.parse(final_response);
                             console.log(final_response);
                         })
@@ -476,12 +494,41 @@ class Game{
             },
             "action_talk": function(message){
                 console.log("Talk action received: ", message);
-                action_type = message["action_type"]
-                piece_id = message["piece_id"]
-                from_player = message["from_player"]
-                talk_key = message["talk_key"]
+                let action_type = message["action_type"]
+                let piece_id = message["piece_id"]
+                let from_player = message["from_player"]
+                let talk_key = message["talk_key"]
                 // Show dialog to answer to talk
+                this.talk_key = talk_key;
                 this.gameUI.showCardsForTalk(action_type, piece_id, from_player, talk_key);
+            },
+            "talkRequestCardClicked": function(card_type, card_value, cardElem){
+                if(this.truecardSelected.length<=2 && this.truecardSelected.indexOf(cardElem) < 0){
+                    this.truecardSelected.push(cardElem);
+                    this.gameUI.highlightTruecard(cardElem);
+                }else if(this.truecardSelected.indexOf(cardElem) >= 0){
+                    this.truecardSelected = this.truecardSelected.filter(elem => elem !== cardElem);
+                    this.gameUI.highlightTruecard(cardElem);
+                }
+                console.log("Talk request card clicked: ", card_type, card_value, " this: ", this.truecardSelected);
+            },
+            "answerTalkRequest": function(){
+                let btnTalkButtonSend = document.getElementById("talk_button_send")
+                if(btnTalkButtonSend.getAttribute("data-talk-key") !== this.talk_key){
+                    console.error("Talk key mismatch!");
+                    return;
+                }
+                this.comm.sendCraftedMessage(this.talk_key, {
+                    "answer": this.truecardSelected.map(i => i.src.substring(i.src.lastIndexOf("/")+1,1000).split(".").slice(0,1).join("")),
+                    "status": "answered"
+                });
+                // Reset talk dialog
+                this.truecardSelected.forEach(elem => {
+                    this.gameUI.highlightTruecard(elem);
+                });
+                this.truecardSelected = [];
+                showTalkDialog();
+                this.talk_key = undefined;
             }
         };
     }
@@ -558,12 +605,16 @@ class Game{
             console.log("Ping received: ", message)
             comm.sendCraftedMessage("pong");
         })
+        this.comm.addConnection("action_talk", (comm, message)=>{
+            this.handlers["action_talk"].bind(this)(message);
+        });
         this.comm.startPingPong(600000);
         this.comm.addConnection("register_player",(comm,message)=>{
             this.me.bodytype = BodyTypes[message["player_info"]["bodytype"].toUpperCase()];
             this.me.color = Colors[message["player_info"]["color"].toUpperCase()];
             this.me.personality = Personality[message["player_info"]["personality"]];
             this.me.mission = message["player_info"]["mission"];
+            this.me.player_turn = message["player_info"]["player_turn"];
             this.playerUI.setColor(this.me.color);
             this.playerUI.setBodyType(this.me.bodytype);
             this.playerUI.setPersonality(this.me.personality);
@@ -580,11 +631,12 @@ class Game{
             for(var p=0; p < message["players"].length; p++){
                 if( this.me.key !== message["players"][p]["key"] ){
                     index += 1;
-                    this.players[index].id = message["players"][index]["id"];
-                    this.players[index].name = message["players"][index]["name"];
-                    this.players[index].color = Colors[message["players"][index]["color"].toUpperCase()];
-                    this.players[index].bodytype = BodyTypes[message["players"][index]["bodytype"].toUpperCase()];
-                    this.players[index].personality = Personality[message["players"][index]["personality"]];
+                    this.players[index].id = message["players"][p]["id"];
+                    this.players[index].name = message["players"][p]["name"];
+                    this.players[index].color = Colors[message["players"][p]["color"].toUpperCase()];
+                    this.players[index].bodytype = BodyTypes[message["players"][p]["bodytype"].toUpperCase()];
+                    this.players[index].personality = Personality[message["players"][p]["personality"]];
+                    this.players[index].player_turn = message["players"][p]["player_turn"];
                     this.players[index].playerUI.setColor(this.players[index].color);
                     this.players[index].playerUI.setBodyType(this.players[index].bodytype);
                 }

@@ -9,6 +9,7 @@ import uuid
 import numpy as np #replaceable for random.choice without replacement
 
 history = {}
+talk_keys = {}
 
 NUM_WHITE = 2
 NUM_BLACK = 2
@@ -74,7 +75,8 @@ class Player:
             "key": self.key,
             "id": self.client_id,
             "starting": self.starting,
-            "positions": self.positions
+            "positions": self.positions,
+            "player_turn": self.player_turn
         }
     def movePiece(self, from_step, to_step):
         if from_step in self.positions:
@@ -166,7 +168,7 @@ class ConnectionManager:
         players_info.append(Player2.toDict())
         players_info.append(Player3.toDict())
         players_info.append(Player4.toDict())
-        await self.broadcast({"type": "request_players_info", "players": players_info, "turn": TURNO})
+        await self.broadcast({"type": "request_players_info", "players": players_info, "turn": TURNO, **history[TURNO]})
 
 manager = ConnectionManager()
 
@@ -323,7 +325,8 @@ async def ws_endpoint(websocket: WebSocket):
                     await manager.send_to(client_id, {"type": "__action", "status": "piece_not_captured_this_turn", **history[TURNO]})
                     continue
                 else:
-                    talk_key = generateTalkKey()
+                    talk_key = f"__{generateTalkKey()}"
+                    talk_keys[talk_key] = {"from_player_client_id": other_player.client_id, "to_player_client_id": client_id, "from_player": player.player_turn, "action_type": action_type, "piece_id": piece_id}
                     await manager.send_to(other_player.client_id, {"type": "action_talk", "action_type": action_type, "piece_id": piece_id, "from_player": player.player_turn, "talk_key": talk_key})
                     await manager.send_to(client_id, {"type": "__action", "status": "ok", **history[TURNO], "talk_key": talk_key})
             elif msg["type"] == "action_response":
@@ -340,6 +343,12 @@ async def ws_endpoint(websocket: WebSocket):
                 else:
                     history[TURNO]["talks"].append({"type": "action_response", "talk_key": talk_key, "response": response})
                     await manager.send_to(list(filter(lambda p: p.player_turn == player_turn, Players))[0].client_id, {"type": "action_response", "status": "ok", "response": response, **history[TURNO]})
+            elif msg["type"] in list(talk_keys.keys()):
+                if msg["data"]["status"] == "waiting":
+                    continue
+                data = msg["data"]["answer"]
+                await manager.send_to(talk_keys[msg["type"]]["to_player_client_id"], {"type": "talk_response", "data": data, "from_player": talk_keys[msg["type"]]["from_player"], "talk_key": msg["type"], "data": data})
+                talk_keys.pop(msg["type"], None)
             elif msg["type"] == "end_turn":
                 player_key = msg["data"]["player_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]
