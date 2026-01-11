@@ -42,3 +42,22 @@ img.card.bodytype_card, img.card.personality_card, img.card.truecard{
 .card.selected_truecard{
     outline: 5px solid gray;
 }
+#talk_answer_received{
+    position: absolute;
+    right: 0px;
+    max-height: 600px;
+    background-color: white;
+    padding: 20px;
+}
+#talk_answer_received>#answer_1, #talk_answer_received>#answer_2, #talk_answer_received>#answer_3{
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    border: 1px solid black;
+    margin: 10px 0px;
+}
+#talk_answer_received>#answer_1>img, #talk_answer_received>#answer_2>img, #talk_answer_received>#answer_3>img{
+    height: 100%;
+    max-height: 150px;
+}
