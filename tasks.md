@@ -1,7 +1,8 @@
 # TO BE DONE:
 
-[] - Prophecy
-[] - Talk to other
+[x] - Prophecy
+[x] - Talk to other
+[] - Talk with Ambassador to other
 [] - Ambassy
-[] - Scatter around other pieces after talk
+[x] - Scatter around other pieces after talk
 [] - Online
