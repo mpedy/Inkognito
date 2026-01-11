@@ -50,9 +50,9 @@
             <img id="player_mission" style="height: 100%;" />
         </div>
     </div>
-    <div id="player_info_ui_1"><div id="colordiv_1"></div><div id="bodytypediv_1"></div></div>
-    <div id="player_info_ui_2"><div id="colordiv_2"></div><div id="bodytypediv_2"></div></div>
-    <div id="player_info_ui_3"><div id="colordiv_3"></div><div id="bodytypediv_3"></div></div>
+    <div id="player_info_ui_1" class="hidden"><div id="colordiv_1"></div><div id="bodytypediv_1"></div></div>
+    <div id="player_info_ui_2" class="hidden"><div id="colordiv_2"></div><div id="bodytypediv_2"></div></div>
+    <div id="player_info_ui_3" class="hidden"><div id="colordiv_3"></div><div id="bodytypediv_3"></div></div>
     <div id="controls">
         <button id="btn_canovaccio" onclick="showCanovaccio()">Show Canovaccio</button>
         <button id="btn_missions" onclick="showMissions()">Show Missions</button>
@@ -71,6 +71,8 @@
     </div>
     <div id="captured_pieces_container">
         <div id="captured_pieces">
+            <div id="ambassador_ambassador_captured" data-piece-id="ambassador_ambassador" class="capturedpiece hidden"><img style="height: 80%" src="static/ambassador.png" id="ambassador_ambassador_captured_img"/></div>
+
             <div id="red_tall_captured" data-piece-id="red_tall" class="capturedpiece hidden"><img style="height: 80%" src="static/red_tall.png" id="red_tall_captured_img"/></div>
             <div id="red_medium_captured" data-piece-id="red_medium" class="capturedpiece hidden"><img style="height: 80%" src="static/red_medium.png" id="red_medium_captured_img"/></div>
             <div id="red_large_captured" data-piece-id="red_large" class="capturedpiece hidden"><img style="height: 80%" src="static/red_large.png" id="red_large_captured_img"/></div>
@@ -96,6 +98,12 @@
             <div>
                 <button id="what">What</button>
                 <button id="who">Who</button>
+                <select id="which">
+                    <option id="red" value="red">Rosso</option>
+                    <option id="blue" value="blue">Blu</option>
+                    <option id="green" value="green">Verde</option>
+                    <option id="yellow" value="yellow">Giallo</option>
+                </select>
             </div>
         </div>
     </div>
@@ -248,7 +256,13 @@
                         <span>Giocatore: </span>
                         <input type="text" style="width: 15ch;" />
                         <span>Colore: </span>
-                        <input type="text" style="width: 10ch;" />
+                        <select style="width: 10ch;">
+                            <option></option>
+                            <option>Rosso</option>
+                            <option>Blu</option>
+                            <option>Verde</option>
+                            <option>Giallo</option>
+                        </select>
                         <span>Missione: </span>
                         <select style="width: 6ch; text-align: center">
                             <option></option>
@@ -367,7 +381,13 @@
                         <span>Giocatore: </span>
                         <input type="text" style="width: 15ch;" />
                         <span>Colore: </span>
-                        <input type="text" style="width: 10ch;" />
+                        <select style="width: 10ch;">
+                            <option></option>
+                            <option>Rosso</option>
+                            <option>Blu</option>
+                            <option>Verde</option>
+                            <option>Giallo</option>
+                        </select>
                         <span>Missione: </span>
                         <select style="width: 6ch; text-align: center">
                             <option></option>

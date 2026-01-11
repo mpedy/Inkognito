@@ -61,3 +61,15 @@ img.card.bodytype_card, img.card.personality_card, img.card.truecard{
     height: 100%;
     max-height: 150px;
 }
+#talk_request>span.green{
+    color: green;
+}
+#talk_request>span.red{
+    color: red;
+}
+#talk_request>span.blue{
+    color: blue;
+}
+#talk_request>span.yellow{
+    color: goldenrod;
+}
