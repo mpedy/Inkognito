@@ -130,7 +130,6 @@ class CookieManager{
     constructor(){
         if(this.getCookie("game_key") === ""){
             this.key = (Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2)).substring(0,21);
-            debugger;
             this.setCookie("game_key", this.key, 365);
         }
     };
@@ -357,12 +356,18 @@ class GameUI{
             }
         }
     };
-    capturePiece(pieceId){
-        let pieceElem = this.board.getElementById(pieceId);
-        pieceElem.classList.add("captured");
-        document.getElementById(`${pieceId}_captured`).classList.remove("hidden");
-        this.game.capturedPieces.push(pieceId);
-        //TODO: ambassador capture handling
+    capturePiece(fromPieceId, pieceId){
+        if(fromPieceId == "ambassador_ambassador"){
+            let pieceElem = this.board.getElementById(fromPieceId);
+            pieceElem.classList.add("captured");
+            document.getElementById(`${fromPieceId}_captured`).classList.remove("hidden");
+            this.game.capturedPieces.push(fromPieceId);
+        }else{
+            let pieceElem = this.board.getElementById(pieceId);
+            pieceElem.classList.add("captured");
+            document.getElementById(`${pieceId}_captured`).classList.remove("hidden");
+            this.game.capturedPieces.push(pieceId);
+        }
     };
     freePiece(pieceId){
         let pieceElem = this.board.getElementById(pieceId);
@@ -371,13 +376,13 @@ class GameUI{
         this.game.capturedPieces = this.game.capturedPieces.filter(p => p !== pieceId);
         document.getElementById("capture_choice").classList.add("hidden");
     };
-    showCardsForTalk(action_type, piece_id, from_player, talk_key){
+    showCardsForTalk(action_type, piece_id, from_player, from_player_color, talk_key){
         showTalkDialog();
         this.game.talk_key = talk_key;
         let talkButtonSend = document.getElementById("talk_button_send");
         talkButtonSend.setAttribute("data-from-player", from_player);
         talkButtonSend.setAttribute("data-talk-key", talk_key);
-        document.getElementById("talk_request").innerHTML ="<span>"+from_player+"</span> wants to know <span class='strong'>"+(action_type.toUpperCase())+"</span> you are!";
+        document.getElementById("talk_request").innerHTML ="Player <span class='strong "+from_player_color+"'>"+from_player_color+"</span> wants to know <span class='strong'>"+(action_type.toUpperCase())+"</span> you are"+(this.game.talkWithAmbassador? " with Ambassador" : "")+"!";
     };
     highlightTruecard(cardElem){
         cardElem.classList.toggle("selected_truecard");
@@ -464,7 +469,6 @@ class Game{
                         "capture_key": this.captureKeys[pieceId]
                     }).then((response) => {
                         response = JSON.parse(response);
-                        debugger;
                         if(response["status"] == "ok"){
                             delete this.captureKeys[pieceId];
                             this.gameUI.freePiece(pieceId);
@@ -499,8 +503,7 @@ class Game{
                                 );
                                 if(response["talks"].length > 0){
                                     for(var talk of response["talks"]){
-                                        this.gameUI.capturePiece(talk["between"][1], talk["capture_key"]);
-                                        this.captureKeys[talk["between"][1]] = talk["capture_key"];
+                                        this.handleTalks(talk);
                                     }
                                 }
                             }else{
@@ -556,7 +559,9 @@ class Game{
                 this.comm.sendCraftedMessageAndWait("__action", {
                     "action_type": action_type,
                     "piece_id": pieceId,
-                    "player_key": this.me.key
+                    "player_key": this.me.key,
+                    "ambassador": this.capturedPieceSelected.id === "ambassador_ambassador_captured" ? true : false,
+                    "color_with_ambassador": document.getElementById("which").value
                 }).then(function(response){
                     response = JSON.parse(response);
                     console.log(response);
@@ -580,13 +585,19 @@ class Game{
                 let action_type = message["action_type"]
                 let piece_id = message["piece_id"]
                 let from_player = message["from_player"]
+                let from_player_color = message["from_player_color"]
                 let talk_key = message["talk_key"]
                 // Show dialog to answer to talk
                 this.talk_key = talk_key;
-                this.gameUI.showCardsForTalk(action_type, piece_id, from_player, talk_key);
+                if(piece_id === "ambassador_ambassador"){
+                    this.talkWithAmbassador = true;
+                }else{
+                    this.talkWithAmbassador = false;
+                }
+                this.gameUI.showCardsForTalk(action_type, piece_id, from_player, from_player_color, talk_key);
             },
             "talkRequestCardClicked": function(card_type, card_value, cardElem){
-                if(this.truecardSelected.length<=2 && this.truecardSelected.indexOf(cardElem) < 0){
+                if(this.truecardSelected.length<=( this.talkWithAmbassador ? 1 : 2) && this.truecardSelected.indexOf(cardElem) < 0){
                     this.truecardSelected.push(cardElem);
                     this.gameUI.highlightTruecard(cardElem);
                 }else if(this.truecardSelected.indexOf(cardElem) >= 0){
@@ -654,11 +665,19 @@ class Game{
                 }
                 if(response["talks"].length > 0){
                     for(var talk of response["talks"]){
-                        this.gameUI.capturePiece(talk["between"][1]);
+                        this.handleTalks(talk);
                     }
                 }
             }
         });
+    }
+    handleTalks(talk){
+        this.gameUI.capturePiece(talk["between"][0], talk["between"][1]);
+        if(talk["between"][0] == "ambassador_ambassador"){
+            this.captureKeys["ambassador_ambassador"] = talk["capture_key"];
+        }else{
+            this.captureKeys[talk["between"][1]] = talk["capture_key"];
+        }
     }
     useMove(mv){
         this.moves[mv] = null;
@@ -735,6 +754,27 @@ class Game{
             }
             this.gameUI.addAmbassyPiece();
         });
+        this.comm.addConnection("update_positions", (comm, message)=>{
+            for(var color of Object.keys(message["positions"])){
+                if(color != "ambassador"){
+                    for(var i=0; i<4; i++){
+                        let step = message["positions"][color]["pieces"][i];
+                        let bodytype = message["positions"][color]["pieces"][i+4];
+                        this.gameUI.movePieceFromStepToStep(color, bodytype, "step_"+step);
+                    }
+                    for(var captured_piece of message["positions"][color]["captured"]){
+                        this.gameUI.board.getElementById(color+"_"+captured_piece).classList.add("captured");
+                    }
+                }else{
+                    this.gameUI.movePieceFromStepToStep("ambassador", "ambassador", "step_"+message["positions"][color]["pieces"]);
+                    if(message["positions"][color]["captured"] == true){
+                        this.gameUI.board.getElementById("ambassador_ambassador").classList.add("captured");
+                    }else{
+                        this.gameUI.board.getElementById("ambassador_ambassador").classList.remove("captured");
+                    }
+                }
+            }
+        })
         this.comm.sendCraftedMessage("request_players_info");
     };
 }

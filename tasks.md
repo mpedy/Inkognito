@@ -2,9 +2,10 @@
 
 - [x] Prophecy
 - [x] Talk to other
-- [ ] Talk with Ambassador to other
-- [ ] Ambassy
+- [x] Talk with Ambassador to other
+- [x] Ambassy
 - [x] Scatter around other pieces after talk
-- [ ] Scatter around ambassador only on colored cells or Ambassy cell
-- [ ] Online
+- [x] Scatter around ambassador <strike>only on colored cells or Ambassy cell</strike>
+- [x] Online
 - [ ] Win conditions
+- [ ] Locale
