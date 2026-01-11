@@ -271,7 +271,7 @@ async def ws_endpoint(websocket: WebSocket):
                     if to_step in other_players_position or (using_move=="black" and to_step in player.positions):
                         print(f"step_{to_step} occupied by another player, removing piece from the board")
                         other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
-                        history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key]})
+                        history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key], "capture_key": f"__{generateTalkKey()}"})
                     player.movePiece(from_step, to_step)
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "ok", **history[TURNO]})
                 else:
@@ -329,26 +329,47 @@ async def ws_endpoint(websocket: WebSocket):
                     talk_keys[talk_key] = {"from_player_client_id": other_player.client_id, "to_player_client_id": client_id, "from_player": player.player_turn, "action_type": action_type, "piece_id": piece_id}
                     await manager.send_to(other_player.client_id, {"type": "action_talk", "action_type": action_type, "piece_id": piece_id, "from_player": player.player_turn, "talk_key": talk_key})
                     await manager.send_to(client_id, {"type": "__action", "status": "ok", **history[TURNO], "talk_key": talk_key})
-            elif msg["type"] == "action_response":
-                # TODO: to review
-                talk_key = msg["data"]["talk_key"]
-                response = msg["data"]["response"]
-                player_turn = msg["data"]["player_turn"]
-                player_key = msg["data"]["player_key"]
-                response = msg["data"]["response"]
+            #elif msg["type"] == "action_response":
+            #    # TODO: to review
+            #    talk_key = msg["data"]["talk_key"]
+            #    response = msg["data"]["response"]
+            #    player_turn = msg["data"]["player_turn"]
+            #    player_key = msg["data"]["player_key"]
+            #    response = msg["data"]["response"]
+            #    player = list(filter(lambda p: p.key == player_key, Players))[0]
+            #    if TURNO != player.player_turn:
+            #        await manager.send_to(client_id, {"type": "action_response", "status": "not_your_turn", **history[TURNO]})
+            #        continue
+            #    else:
+            #        history[TURNO]["talks"].append({"type": "action_response", "talk_key": talk_key, "response": response})
+            #        await manager.send_to(list(filter(lambda p: p.player_turn == player_turn, Players))[0].client_id, {"type": "action_response", "status": "ok", "response": response, **history[TURNO]})
+            elif msg["type"] in list(talk_keys.keys()):
+                if msg["status"] == "waiting":
+                    continue
+                data = msg["answer"]
+                await manager.send_to(talk_keys[msg["type"]]["to_player_client_id"], {"type": msg["type"],"status": msg["status"], "data": data, "from_player": talk_keys[msg["type"]]["from_player"], "talk_key": msg["type"], "data": data})
+                talk_keys.pop(msg["type"], None)
+            elif msg["type"] == "__can_free_piece":
+                piece_id = msg["piece_id"]
+                player_key = msg["player_key"]
+                to_step = msg["to_step"]
+                capture_key = msg["capture_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]
+                other_players = list(filter(lambda p: p.key != player_key, Players))
+                other_players_position = []
+                for p in other_players:
+                    other_players_position += p.positions
                 if TURNO != player.player_turn:
-                    await manager.send_to(client_id, {"type": "action_response", "status": "not_your_turn", **history[TURNO]})
+                    await manager.send_to(client_id, {"type": "__can_free_piece", "status": "not_your_turn", **history[TURNO]})
+                    continue
+                elif to_step in other_players_position:
+                    await manager.send_to(client_id, {"type": "__can_free_piece", "status": "position_occupied", **history[TURNO]})
                     continue
                 else:
-                    history[TURNO]["talks"].append({"type": "action_response", "talk_key": talk_key, "response": response})
-                    await manager.send_to(list(filter(lambda p: p.player_turn == player_turn, Players))[0].client_id, {"type": "action_response", "status": "ok", "response": response, **history[TURNO]})
-            elif msg["type"] in list(talk_keys.keys()):
-                if msg["data"]["status"] == "waiting":
-                    continue
-                data = msg["data"]["answer"]
-                await manager.send_to(talk_keys[msg["type"]]["to_player_client_id"], {"type": "talk_response", "data": data, "from_player": talk_keys[msg["type"]]["from_player"], "talk_key": msg["type"], "data": data})
-                talk_keys.pop(msg["type"], None)
+                    other_p = list(filter(lambda p: p.color == piece_id.split("_")[0], Players))[0]
+                    history[TURNO]["talks"].pop(next(i for i,talk in enumerate(history[TURNO]["talks"]) if talk.get("capture_key", None) == capture_key))
+                    other_p.movePiece(other_p.getStepFromPiece(piece_id.split("_")[1]), to_step)
+                    await manager.send_to(client_id, {"type": "__can_free_piece", "status": "ok", **history[TURNO]})
             elif msg["type"] == "end_turn":
                 player_key = msg["data"]["player_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]

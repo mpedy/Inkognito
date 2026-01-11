@@ -83,9 +83,23 @@ class Communication{
             this.ws.send(JSON.stringify(message));
         }
     }
-    sendAndWait(type, data=[]) {// type must start with "__"
+    sendCraftedMessageAndWait(type, data=[]) {// type must start with "__"
         return new Promise((resolve, reject) => {
             if(type.startsWith("__") === false){
+                console.error("sendCraftedMessageAndWait type must start with '__'");
+                return reject("sendCraftedMessageAndWait type must start with '__'");
+            }
+            const handler = event => {
+                this.ws.removeEventListener("message", handler);
+                resolve(event.data);
+            };
+            this.ws.addEventListener("message", handler);
+            this.ws.send(JSON.stringify({type: type, data: data}));
+        });
+    };
+    sendAndWait(data={}) {// type must start with "__"
+        return new Promise((resolve, reject) => {
+            if(data["type"] && data["type"].startsWith("__") === false){
                 console.error("sendAndWait type must start with '__'");
                 return reject("sendAndWait type must start with '__'");
             }
@@ -94,7 +108,7 @@ class Communication{
                 resolve(event.data);
             };
             this.ws.addEventListener("message", handler);
-            this.ws.send(JSON.stringify({type: type, data: data}));
+            this.ws.send(JSON.stringify(data));
         });
     };
     addConnection(type, handler){
@@ -348,6 +362,13 @@ class GameUI{
         this.game.capturedPieces.push(pieceId);
         //TODO: ambassador capture handling
     };
+    freePiece(pieceId){
+        let pieceElem = this.board.getElementById(pieceId);
+        pieceElem.classList.remove("captured");
+        document.getElementById(`${pieceId}_captured`).classList.add("hidden");
+        this.game.capturedPieces = this.game.capturedPieces.filter(p => p !== pieceId);
+        document.getElementById("capture_choice").classList.add("hidden");
+    };
     showCardsForTalk(action_type, piece_id, from_player, talk_key){
         showTalkDialog();
         this.game.talk_key = talk_key;
@@ -358,6 +379,31 @@ class GameUI{
     };
     highlightTruecard(cardElem){
         cardElem.classList.toggle("selected_truecard");
+    };
+    showAnswerReceived(answer){
+        let talkAnswerReceivedElem = document.getElementById("talk_answer_received");
+        let div = document.createElement("div");
+        div.id="answer_"+this.game.answer_received;
+        let btn = document.createElement("button");
+        btn.innerText = "X";
+        btn.addEventListener("click", this.removeAnswerReceived.bind(this, div.id, btn));
+        talkAnswerReceivedElem.appendChild(btn);
+        for(let i=0; i<answer.length; i++){
+            let img = document.createElement("img");
+            img.src = "static/"+answer[i]+".png";
+            div.appendChild(img);
+        }
+        talkAnswerReceivedElem.appendChild(div);
+        document.getElementById("talk_answer_received").classList.remove("hidden");
+    };
+    removeAnswerReceived(answerDivId, btnElem){
+        let talkAnswerReceivedElem = document.getElementById("talk_answer_received");
+        let answerDiv = document.getElementById(answerDivId);
+        talkAnswerReceivedElem.removeChild(answerDiv);
+        talkAnswerReceivedElem.removeChild(btnElem);
+        if(talkAnswerReceivedElem.children.length === 0){
+            talkAnswerReceivedElem.classList.add("hidden");
+        }
     };
 
 }
@@ -388,7 +434,9 @@ class Game{
         this.balls = document.querySelectorAll(".prophecy_ball");
         this.capturedPieces = [];
         this.truecardSelected = [];
+        this.captureKeys = [];
         this.talk_key = undefined;
+        this.answer_received = 0;
         this.setup();
     };
     getMyColor(){
@@ -404,9 +452,34 @@ class Game{
         this.handlers = {
             "stepClicked": function(stepIndex, stepElem){
                 console.log("Step clicked: "+stepIndex);
+                if(this.capturedPieceSelected){
+                    let pieceId = this.capturedPieceSelected.getAttribute("data-piece-id");
+                    this.comm.sendAndWait({
+                        "type": "__can_free_piece",
+                        "piece_id": pieceId,
+                        "to_step": stepIndex,
+                        "player_key": this.me.key,
+                        "capture_key": this.captureKeys[pieceId]
+                    }).then((response) => {
+                        response = JSON.parse(response);
+                        debugger;
+                        if(response["status"] == "ok"){
+                            delete this.captureKeys[pieceId];
+                            this.gameUI.freePiece(pieceId);
+                            this.gameUI.movePieceFromStepToStep(
+                                this.capturedPieceSelected.id.split("_")[0],
+                                this.capturedPieceSelected.id.split("_")[1],
+                                stepElem.id
+                            );
+                        }else{
+                            console.log(response);
+                        }
+                    });
+                    return;
+                }
                 if(true){//Condition on prophecy results, for now leave it true
                     if(this.pieceClicked && this.moves[this.moveSelected] != null){
-                        this.comm.sendAndWait("__can_move_piece", {
+                        this.comm.sendCraftedMessageAndWait("__can_move_piece", {
                             "piece_id": this.pieceClicked.id,
                             "from_step": this.pieceClicked.getAttribute("data-step"),
                             "to_step": stepIndex,
@@ -424,7 +497,8 @@ class Game{
                                 );
                                 if(response["talks"].length > 0){
                                     for(var talk of response["talks"]){
-                                        this.gameUI.capturePiece(talk["between"][1]);
+                                        this.gameUI.capturePiece(talk["between"][1], talk["capture_key"]);
+                                        this.captureKeys[talk["between"][1]] = talk["capture_key"];
                                     }
                                 }
                             }else{
@@ -475,7 +549,9 @@ class Game{
                 let pieceId = this.capturedPieceSelected.getAttribute("data-piece-id");
                 console.log("What clicked for captured piece: ", pieceId);
                 let comm = this.comm;
-                this.comm.sendAndWait("__action", {
+                let gameui = this.gameUI;
+                let self = this;
+                this.comm.sendCraftedMessageAndWait("__action", {
                     "action_type": action_type,
                     "piece_id": pieceId,
                     "player_key": this.me.key
@@ -483,11 +559,16 @@ class Game{
                     response = JSON.parse(response);
                     console.log(response);
                     if(response["status"] == "ok"){
-                        //TODO: update UI accordingly
-                        // Response contains key for waiting for player answer, meanwhile server messages other players with my requests
-                        comm.sendAndWait(response["talk_key"],{"status": "waiting"}).then(function(final_response){
+                        comm.sendAndWait({
+                            "type": response["talk_key"],
+                            "status": "waiting"
+                        }).then(function(final_response){
                             final_response = JSON.parse(final_response);
-                            console.log(final_response);
+                            if(final_response["status"] == "answered"){
+                                console.log("Talk answered: ", final_response);
+                                self.answer_received += 1;
+                                gameui.showAnswerReceived(final_response["data"]);
+                            }
                         })
                     }
                 })
@@ -518,10 +599,11 @@ class Game{
                     console.error("Talk key mismatch!");
                     return;
                 }
-                this.comm.sendCraftedMessage(this.talk_key, {
+                this.comm.sendMessage(JSON.stringify({
+                    "type": this.talk_key,
+                    "status": "answered",
                     "answer": this.truecardSelected.map(i => i.src.substring(i.src.lastIndexOf("/")+1,1000).split(".").slice(0,1).join("")),
-                    "status": "answered"
-                });
+                }));
                 // Reset talk dialog
                 this.truecardSelected.forEach(elem => {
                     this.gameUI.highlightTruecard(elem);
@@ -545,7 +627,7 @@ class Game{
         this.comm.sendCraftedMessage("end_turn");
     }
     startTurn(){
-        this.comm.sendAndWait("__start_turn", {
+        this.comm.sendCraftedMessageAndWait("__start_turn", {
             "player_key": this.me.key
         }).then((response) => {
             response = JSON.parse(response);
