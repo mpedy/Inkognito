@@ -178,8 +178,7 @@ g.captured{
 }
 #captured_pieces_container{
     position: absolute;
-    top: 50%;
-    transform: translate(0px, -50%);
+    top: 0px;
     width: 250px;
     height: 300px;
     display: flex;
@@ -215,4 +214,10 @@ g.captured{
 }
 .strong{
     font-weight: bold;
+}
+#main_controls{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
 }

@@ -54,9 +54,12 @@
     <div id="player_info_ui_2" class="hidden"><div id="colordiv_2"></div><div id="bodytypediv_2"></div></div>
     <div id="player_info_ui_3" class="hidden"><div id="colordiv_3"></div><div id="bodytypediv_3"></div></div>
     <div id="controls">
-        <button id="btn_canovaccio" onclick="showCanovaccio()">Show Canovaccio</button>
-        <button id="btn_missions" onclick="showMissions()">Show Missions</button>
-        <button id="btn_talk_dialog" onclick="showTalkDialog()">Show Talk Dialog</button>
+        <div id="main_controls">
+            <button id="btn_canovaccio" onclick="showCanovaccio()">Show Canovaccio</button>
+            <button id="btn_missions" onclick="showMissions()">Show Missions</button>
+            <button id="btn_talk_dialog" onclick="showTalkDialog()">Show Talk Dialog</button>
+            <button id="btn_toggle_pieces">Toggle Pieces</button>
+        </div>
         <div id="prophecy_ui">
             <button id="start_turn">Start Turn</button>
             <button id="end_turn">End Turn</button>
@@ -98,7 +101,7 @@
             <div>
                 <button id="what">What</button>
                 <button id="who">Who</button>
-                <select id="which">
+                <select id="which" class="hidden">
                     <option id="red" value="red">Rosso</option>
                     <option id="blue" value="blue">Blu</option>
                     <option id="green" value="green">Verde</option>
