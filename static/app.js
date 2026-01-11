@@ -250,6 +250,8 @@ class GameUI{
         this.whoBtn = document.getElementById("who");
         this.whatBtn.addEventListener("click", this.game.handlers["whatOrWhoClicked"].bind(this.game, "what"));
         this.whoBtn.addEventListener("click", this.game.handlers["whatOrWhoClicked"].bind(this.game, "who"));
+        this.endTurnBtn = document.getElementById("end_turn");
+        this.endTurnBtn.addEventListener("click", this.game.handlers["endTurn"].bind(this.game));
     };
     popolateTrueCards(){
         this.myCardsElem = document.getElementById("my_cards");
@@ -611,6 +613,9 @@ class Game{
                 this.truecardSelected = [];
                 showTalkDialog();
                 this.talk_key = undefined;
+            },
+            "endTurn": function(){
+                this.endTurn();
             }
         };
     }
@@ -624,7 +629,9 @@ class Game{
         this.gameUI.selectMove(mv);
     }
     endTurn(){
-        this.comm.sendCraftedMessage("end_turn");
+        this.comm.sendCraftedMessage("end_turn",{
+            "player_key": this.me.key
+        });
     }
     startTurn(){
         this.comm.sendCraftedMessageAndWait("__start_turn", {

@@ -381,7 +381,9 @@ async def ws_endpoint(websocket: WebSocket):
                     TURNO+=1
                     if TURNO > 4:
                         TURNO = 1
-                    await manager.send_to(client_id, {"type": "end_turn", "status": "ok", **history[TURNO]})
+                    await manager.send_to(client_id, {"type": "end_turn", "status": "ok", **history[TURNO-1]})
+                    history.pop(TURNO-1)
+                    history[TURNO] = {}
 
 
     except WebSocketDisconnect:
