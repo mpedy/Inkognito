@@ -1,10 +1,21 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="{{ lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inkognito</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        window.LANG = {{ lang | tojson }};
+        window.I18N = {{ I18N | tojson }};
+        window.t = function(key, params = {}) {
+            let s = (window.I18N[key] ?? `[${key}]`);
+            for (const [k,v] of Object.entries(params)) {
+                s = s.replaceAll(`{${k}}`, String(v));
+            }
+            return s;
+        };
+    </script>
     <script>
         var canovaccio_visible = false;
         var missions_visible = false;
@@ -55,14 +66,14 @@
     <div id="player_info_ui_3" class="hidden"><div id="colordiv_3"></div><div id="bodytypediv_3"></div></div>
     <div id="controls">
         <div id="main_controls">
-            <button id="btn_canovaccio" onclick="showCanovaccio()">Show Canovaccio</button>
-            <button id="btn_missions" onclick="showMissions()">Show Missions</button>
-            <button id="btn_talk_dialog" onclick="showTalkDialog()">Show Talk Dialog</button>
-            <button id="btn_toggle_pieces">Toggle Pieces</button>
+            <button id="btn_canovaccio" onclick="showCanovaccio()">{{ t("show_notes") }}</button>
+            <button id="btn_missions" onclick="showMissions()">{{ t("show_missions") }}</button>
+            <button id="btn_talk_dialog" onclick="showTalkDialog()">{{ t("show_talk_dialog") }}</button>
+            <button id="btn_toggle_pieces">{{ t("show_toggle_pieces") }}</button>
         </div>
         <div id="prophecy_ui">
-            <button id="start_turn">Start Turn</button>
-            <button id="end_turn">End Turn</button>
+            <button id="start_turn">{{ t("start_turn") }}</button>
+            <button id="end_turn">{{ t("end_turn") }}</button>
             <div id="prophecy_ball_container">
                 <div id="ball_1" class="prophecy_ball"></div>
                 <div id="ball_2" class="prophecy_ball"></div>
@@ -97,15 +108,15 @@
             <div id="blue_short_captured" data-piece-id="blue_short" class="capturedpiece hidden"><img style="height: 80%" src="static/blue_short.png" id="blue_short_captured_img"/></div>
         </div>
         <div id="capture_choice" class="hidden">
-            Choice:
-            <div>
-                <button id="what">What</button>
-                <button id="who">Who</button>
+            {{ t("choice") }}:
+            <div id="choices_container">
+                <button id="what">{{ t("what") }}</button>
+                <button id="who">{{ t("who") }}</button>
                 <select id="which" class="hidden">
-                    <option id="red" value="red">Rosso</option>
-                    <option id="blue" value="blue">Blu</option>
-                    <option id="green" value="green">Verde</option>
-                    <option id="yellow" value="yellow">Giallo</option>
+                    <option id="red" value="red">{{ t("red") }}</option>
+                    <option id="blue" value="blue">{{ t("blue") }}</option>
+                    <option id="green" value="green">{{ t("green") }}</option>
+                    <option id="yellow" value="yellow">{{ t("yellow") }}</option>
                 </select>
             </div>
         </div>
@@ -130,17 +141,17 @@
             <tr>
                 <td rowspan="10">
                     <div>
-                        <span>Giocatore: </span>
+                        <span>{{ t("player") }}: </span>
                         <input type="text" style="width: 15ch;" />
-                        <span>Colore: </span>
+                        <span>{{ t("color") }}: </span>
                         <select style="width: 10ch;">
                             <option></option>
-                            <option>Rosso</option>
-                            <option>Blu</option>
-                            <option>Verde</option>
-                            <option>Giallo</option>
+                            <option>{{ t("red") }}</option>
+                            <option>{{ t("blue") }}</option>
+                            <option>{{ t("green") }}</option>
+                            <option>{{ t("yellow") }}</option>
                         </select>
-                        <span>Missione: </span>
+                        <span>{{ t("mission") }}: </span>
                         <select style="width: 6ch; text-align: center">
                             <option></option>
                             <option>A</option>
@@ -256,17 +267,17 @@
             <tr>
                 <td rowspan="10">
                     <div>
-                        <span>Giocatore: </span>
+                        <span>{{ t("player") }}: </span>
                         <input type="text" style="width: 15ch;" />
-                        <span>Colore: </span>
+                        <span>{{ t("color") }}: </span>
                         <select style="width: 10ch;">
                             <option></option>
-                            <option>Rosso</option>
-                            <option>Blu</option>
-                            <option>Verde</option>
-                            <option>Giallo</option>
+                            <option>{{ t("red") }}</option>
+                            <option>{{ t("blue") }}</option>
+                            <option>{{ t("green") }}</option>
+                            <option>{{ t("yellow") }}</option>
                         </select>
-                        <span>Missione: </span>
+                        <span>{{ t("mission") }}: </span>
                         <select style="width: 6ch; text-align: center">
                             <option></option>
                             <option>A</option>
@@ -381,17 +392,17 @@
             <tr>
                 <td rowspan="10">
                     <div>
-                        <span>Giocatore: </span>
+                        <span>{{ t("player") }}: </span>
                         <input type="text" style="width: 15ch;" />
-                        <span>Colore: </span>
+                        <span>{{ t("color") }}: </span>
                         <select style="width: 10ch;">
                             <option></option>
-                            <option>Rosso</option>
-                            <option>Blu</option>
-                            <option>Verde</option>
-                            <option>Giallo</option>
+                            <option>{{ t("red") }}</option>
+                            <option>{{ t("blue") }}</option>
+                            <option>{{ t("green") }}</option>
+                            <option>{{ t("yellow") }}</option>
                         </select>
-                        <span>Missione: </span>
+                        <span>{{ t("mission") }}: </span>
                         <select style="width: 6ch; text-align: center">
                             <option></option>
                             <option>A</option>
@@ -535,7 +546,7 @@
             </div>
         </div>
         <div id="talk_button">
-            <button id="talk_button_send" data-from-player>Send</button>
+            <button id="talk_button_send" data-from-player>{{ t("send") }}</button>
         </div>
     </div>
 

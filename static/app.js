@@ -383,7 +383,7 @@ class GameUI{
         let talkButtonSend = document.getElementById("talk_button_send");
         talkButtonSend.setAttribute("data-from-player", from_player);
         talkButtonSend.setAttribute("data-talk-key", talk_key);
-        document.getElementById("talk_request").innerHTML ="Player <span class='strong "+from_player_color+"'>"+from_player_color+"</span> wants to know <span class='strong'>"+(action_type.toUpperCase())+"</span> you are"+(this.game.talkWithAmbassador? " with Ambassador" : "")+"!";
+        document.getElementById("talk_request").innerHTML =t("player")+" <span class='strong "+from_player_color+"'>"+t(from_player_color)+"</span> "+t("wants_to_know")+" <span class='strong'>"+(t(action_type).toUpperCase())+"</span> "+t("you_are")+(this.game.talkWithAmbassador? " "+t("with_ambassador") : "")+"!";
     };
     highlightTruecard(cardElem){
         cardElem.classList.toggle("selected_truecard");
@@ -468,6 +468,7 @@ class Game{
         this.handlers = {
             "stepClicked": function(stepIndex, stepElem){
                 console.log("Step clicked: "+stepIndex);
+                let self = this;
                 if(this.capturedPieceSelected){
                     let pieceId = this.capturedPieceSelected.getAttribute("data-piece-id");
                     this.comm.sendAndWait({
@@ -486,6 +487,7 @@ class Game{
                                 this.capturedPieceSelected.id.split("_")[1],
                                 stepElem.id
                             );
+                            this.capturedPieceSelected = null;
                         }else{
                             console.log(response);
                         }
@@ -665,6 +667,7 @@ class Game{
         this.comm.sendCraftedMessage("end_turn",{
             "player_key": this.me.key
         });
+        this.turn_started = false;
     }
     startTurn(){
         if(this.turn_started && this.turn_started === true){
@@ -788,9 +791,10 @@ class Game{
                         let step = message["positions"][color]["pieces"][i];
                         let bodytype = message["positions"][color]["pieces"][i+4];
                         this.gameUI.movePieceFromStepToStep(color, bodytype, "step_"+step);
+                        this.gameUI.board.getElementById(color+"_"+bodytype).classList.remove("captured");
                     }
                     for(var captured_piece of message["positions"][color]["captured"]){
-                        this.gameUI.board.getElementById(color+"_"+captured_piece).classList.add("captured");
+                        this.gameUI.board.getElementById(captured_piece).classList.add("captured");
                     }
                 }else{
                     this.gameUI.movePieceFromStepToStep("ambassador", "ambassador", "step_"+message["positions"][color]["pieces"]);

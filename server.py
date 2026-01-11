@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import random
@@ -7,6 +7,8 @@ import json
 from typing import Dict
 import uuid
 import numpy as np #replaceable for random.choice without replacement
+from fastapi.templating import Jinja2Templates
+from functools import lru_cache
 
 history = {}
 talk_keys = {}
@@ -145,9 +147,59 @@ def createNewPlayers():
 
 createNewPlayers()
 
+templates = Jinja2Templates(directory=".")
+SUPPORTED_LANG = ["it","en"]
+DEFAULT_LANG = "en"
+
+def pick_language(request: Request):
+    # 1) query param ?lang=it
+    lang = request.query_params.get("lang")
+    if lang in SUPPORTED_LANG:
+        return lang
+
+    # 2) cookie lang=it
+    lang = request.cookies.get("lang")
+    if lang in SUPPORTED_LANG:
+        return lang
+
+    # 3) Accept-Language
+    header = request.headers.get("accept-language", "")
+    candidates = [p.split(";")[0].strip() for p in header.split(",") if p.strip()]
+    for c in candidates:
+        base = c.split("-")[0]
+        if c in SUPPORTED_LANG:
+            return c
+        if base in SUPPORTED_LANG:
+            return base
+
+    return DEFAULT_LANG
+
+@lru_cache(maxsize=16)
+def load_dict(lang: str) -> dict:
+    with open(f"i18n/{lang}.json", "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def get_locale(request: Request) -> str:
+    return pick_language(request)
+
+def make_t(lang: str):
+    d = load_dict(lang)
+    def t(key: str, **kwargs) -> str:
+        # fallback: if key is missing, show the key (helps with debugging)
+        text = d.get(key, f"[{key}]")
+        # support parameters: "hello_user": "Ciao {name}"
+        try:
+            return text.format(**kwargs)
+        except Exception:
+            return text
+    return t
+
 @app.get("/")
-async def read_root():
-    return HTMLResponse(open("index.html").read())
+async def read_root(request: Request, lang: str = Depends(get_locale)):
+    #return HTMLResponse(open("index.html").read())
+    t = make_t(lang)
+    d = load_dict(lang)
+    return templates.TemplateResponse("index.html", {"request": request, "t": t, "lang": lang, "I18N": d})
    
 
 class ConnectionManager:
@@ -168,6 +220,31 @@ class ConnectionManager:
         ws = self.active.get(client_id)
         if ws:
             await ws.send_text(json.dumps(message))
+    
+    async def sendPositionsTo(self, client_id: str):
+        positions = {
+            Player1.color: {
+                "pieces": Player1.positions,
+                "captured": Player1.captured
+            },
+            Player2.color: {
+                "pieces": Player2.positions,
+                "captured": Player2.captured
+            },
+            Player3.color: {
+                "pieces": Player3.positions,
+                "captured": Player3.captured
+            },
+            Player4.color: {
+                "pieces": Player4.positions,
+                "captured": Player4.captured
+            },
+            "ambassador": {
+                "pieces": int(ambassador_position.split("_")[1]),
+                "captured": ambassador_is_captured
+            }
+        }
+        await self.send_to(client_id, {"type": "update_positions", "positions": positions})
     
     async def sendPositionsToAll(self):
         positions = {
@@ -225,6 +302,7 @@ async def ws_endpoint(websocket: WebSocket):
             print("Ricevuto messaggio: ", msg)
             msg = json.loads(msg)
             if msg["type"] == "register_player":
+                await manager.sendPositionsTo(client_id)
                 key = msg["key"]
                 player = list(filter(lambda p: p.key == key, Players))
                 if len(player) > 0:
@@ -310,6 +388,8 @@ async def ws_endpoint(websocket: WebSocket):
                         print(f"step_{to_step} occupied by another player, removing piece from the board")
                         other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
                         history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key], "capture_key": f"__{generateTalkKey()}"})
+                        other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
+                        player.movePiece(from_step, to_step)
                         if piece_id == "ambassador_ambassador":
                             setAmbassadorCaptured(True)
                     else:
@@ -319,7 +399,6 @@ async def ws_endpoint(websocket: WebSocket):
                             player.movePiece(from_step, to_step)
                         if to_step in other_players_position:
                             other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
-                            other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "ok", **history[TURNO]})
                     await manager.sendPositionsToAll()
                 else:
@@ -343,6 +422,7 @@ async def ws_endpoint(websocket: WebSocket):
                     continue
                 else:
                     prophecy_result = profetizza()
+                    prophecy_result = ["yellow", "yellow", "yellow"]  # for testing
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
                     history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
