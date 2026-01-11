@@ -6,3 +6,4 @@
 [] - Ambassy
 [x] - Scatter around other pieces after talk
 [] - Online
+[] - Win conditions
