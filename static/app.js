@@ -330,6 +330,7 @@ class GameUI{
         for(let i=0; i<balls.length; i++){
             balls[i].style.backgroundColor = results[i];
             balls[i].setAttribute("data-color", results[i]);
+            balls[i].classList.remove("selected_move");
             if(results[i] !== "white"){
                 balls[i].addEventListener("click", function(){this.game.balls[i].getAttribute("data-used") === "1" ? null : this.game.selectMove(i)}.bind(this, i));
             }else{
@@ -412,7 +413,14 @@ class GameUI{
             talkAnswerReceivedElem.classList.add("hidden");
         }
     };
-
+    setupWithBoardInitialized(){
+        this.btnTogglePieces = document.getElementById("btn_toggle_pieces");
+        this.btnTogglePieces.addEventListener("click", function(){
+            this.board.querySelectorAll(".piece").forEach(elem => {
+                elem.classList.toggle("pieces_hidden");
+            });
+        }.bind(this));
+    }
 }
 
 class Game{
@@ -439,6 +447,7 @@ class Game{
         this.moves = [];
         this.moveSelected = null;
         this.balls = document.querySelectorAll(".prophecy_ball");
+        this.turn_started = false;
         this.capturedPieces = [];
         this.truecardSelected = [];
         this.captureKeys = [];
@@ -538,14 +547,26 @@ class Game{
                 if(!this.capturedPieceSelected){
                     this.capturedPieceSelected = pieceElem;
                     document.getElementById("capture_choice").classList.remove("hidden");
+                    if(pieceId == "ambassador_ambassador"){
+                        document.getElementById("which").classList.remove("hidden");
+                    }
                 }else{
                     if(this.capturedPieceSelected === pieceElem){
                         this.capturedPieceSelected = null;
                         document.getElementById("capture_choice").classList.add("hidden");
+                        if(pieceId == "ambassador_ambassador"){
+                            document.getElementById("which").classList.add("hidden");
+                        }
                     }else{
                         this.capturedPieceSelected.classList.toggle("selected");
+                        if(this.capturedPieceSelected.id === "ambassador_ambassador_captured"){
+                            document.getElementById("which").classList.add("hidden");
+                        }
                         this.capturedPieceSelected = pieceElem;
                         document.getElementById("capture_choice").classList.remove("hidden");
+                        if(pieceId == "ambassador_ambassador"){
+                            document.getElementById("which").classList.remove("hidden");
+                        }
                     }
                 }
                 pieceElem.classList.toggle("selected");
@@ -640,11 +661,16 @@ class Game{
         this.gameUI.selectMove(mv);
     }
     endTurn(){
+        this.gameUI.showProphecyResults(["white","white","white"]);
         this.comm.sendCraftedMessage("end_turn",{
             "player_key": this.me.key
         });
     }
     startTurn(){
+        if(this.turn_started && this.turn_started === true){
+            return;
+        }
+        this.turn_started = true;
         this.comm.sendCraftedMessageAndWait("__start_turn", {
             "player_key": this.me.key
         }).then((response) => {
@@ -687,6 +713,7 @@ class Game{
         this.board = document.getElementById("board");
         this.board.addEventListener("load", () => {
             this.gameUI.board = this.board.contentDocument;
+            this.gameUI.setupWithBoardInitialized();
             for(var i=1; i<=58; i++){
                 let stepElem = this.gameUI.board.getElementById("step_"+i);
                 stepElem.style.cursor = "pointer";

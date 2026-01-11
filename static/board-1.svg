@@ -535,6 +535,9 @@
          g.captured{
             display: none;
          }
+         .pieces_hidden{
+            display: none;
+         }
       </style>
     </g>
   </g>
