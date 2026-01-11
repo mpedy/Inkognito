@@ -305,18 +305,21 @@ async def ws_endpoint(websocket: WebSocket):
                     print("Move index: ", move_index)
                     history[TURNO]["prophecy_used"].append(move_index)
                     history[TURNO].setdefault("talks", [])
+                    # Case if capture other pieces or ambassador step into one of its player position
                     if to_step in other_players_position or (using_move=="black" and to_step in player.positions):
                         print(f"step_{to_step} occupied by another player, removing piece from the board")
                         other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
                         history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key], "capture_key": f"__{generateTalkKey()}"})
                         if piece_id == "ambassador_ambassador":
                             setAmbassadorCaptured(True)
-                    if piece_id == "ambassador_ambassador":
-                        moveAmbassador(to_step)
                     else:
-                        player.movePiece(from_step, to_step)
-                        other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
-                        other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
+                        if piece_id == "ambassador_ambassador":
+                            moveAmbassador(to_step)
+                        else:
+                            player.movePiece(from_step, to_step)
+                        if to_step in other_players_position:
+                            other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
+                            other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "ok", **history[TURNO]})
                     await manager.sendPositionsToAll()
                 else:
