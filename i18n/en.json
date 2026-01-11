@@ -1,0 +1,22 @@
+{
+    "show_notes": "Show notes",
+    "show_missions": "Show missions",
+    "show_talk_dialog": "Show Talk Dialog",
+    "show_toggle_pieces": "Toggle display pieces",
+    "start_turn": "Start Turn",
+    "end_turn": "End Turn",
+    "player": "Player",
+    "color": "Color",
+    "red": "Red",
+    "blue": "Blue",
+    "green": "Green",
+    "yellow": "Yellow",
+    "mission": "Mission",
+    "send": "Send",
+    "choice": "Choice",
+    "what": "What",
+    "who": "Who",
+    "wants_to_know": "wants to know",
+    "you_are": "you are",
+    "with_ambassador": "with the Ambassador"
+}

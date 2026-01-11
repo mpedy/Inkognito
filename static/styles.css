@@ -203,8 +203,16 @@ g.captured{
     outline: 3px solid yellow;
     background-color: #222;
 }
+#choices_container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 #what, #who{
-    width: 60px;
+    min-width: 80px;
+    width: auto;
+    max-width: 100px;
+    white-space: nowrap;
     height: 40px;
     margin: 10px;
     border: none;

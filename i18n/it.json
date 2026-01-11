@@ -1,0 +1,22 @@
+{
+    "show_notes": "Mostra appunti",
+    "show_missions": "Mostra missioni",
+    "show_talk_dialog": "Mostra finestra dialogo",
+    "show_toggle_pieces": "Mostra/nascondi pezzi",
+    "start_turn": "Inizia turno",
+    "end_turn": "Termina turno",
+    "player": "Giocatore",
+    "color": "Colore",
+    "red": "Rosso",
+    "blue": "Blu",
+    "green": "Verde",
+    "yellow": "Giallo",
+    "mission": "Missione",
+    "send": "Invia",
+    "choice": "Scegli",
+    "what": "Che cosa",
+    "who": "Chi",
+    "wants_to_know": "vuole sapere",
+    "you_are": "sei",
+    "with_ambassador": "con l'Ambasciatore"
+}
