@@ -383,12 +383,15 @@ async def ws_endpoint(websocket: WebSocket):
                     print("Move index: ", move_index)
                     history[TURNO]["prophecy_used"].append(move_index)
                     history[TURNO].setdefault("talks", [])
-                    # Case if capture other pieces or ambassador step into one of its player position
-                    if to_step in other_players_position or (using_move=="black" and to_step in player.positions):
+                    # Case if capture other pieces or ambassador step into one of its player position or player into ambassador position
+                    if to_step in other_players_position or to_step == ambassador_position or (using_move=="black" and to_step in player.positions):
                         print(f"step_{to_step} occupied by another player, removing piece from the board")
                         other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
                         history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key], "capture_key": f"__{generateTalkKey()}"})
-                        other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
+                        if to_step == ambassador_position[0]:
+                            setAmbassadorCaptured(True)
+                        else:
+                            other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
                         player.movePiece(from_step, to_step)
                         if piece_id == "ambassador_ambassador":
                             setAmbassadorCaptured(True)
@@ -422,6 +425,7 @@ async def ws_endpoint(websocket: WebSocket):
                     continue
                 else:
                     prophecy_result = profetizza()
+                    #prophecy_result = ["yellow", "yellow", "yellow"]  # for testing
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
                     history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
@@ -499,11 +503,11 @@ async def ws_endpoint(websocket: WebSocket):
                     continue
                 else:
                     history[TURNO]["turn"] = "finished"
+                    await manager.send_to(client_id, {"type": "end_turn", "status": "ok", **history[TURNO]})
+                    history.pop(TURNO)
                     TURNO+=1
                     if TURNO > 4:
                         TURNO = 1
-                    await manager.send_to(client_id, {"type": "end_turn", "status": "ok", **history[TURNO-1]})
-                    history.pop(TURNO-1)
                     history[TURNO] = {}
 
 
