@@ -22,5 +22,7 @@
     "turn_of": "Turn of",
     "you_must_free_captured_pieces_before_ending_turn": "You must free captured pieces before ending your turn",
     "processing_your_request": "Processing your request",
-    "request_sent_waiting_for_answer": "Request sent, waiting for an answer"
+    "request_sent_waiting_for_answer": "Request sent, waiting for an answer",
+    "has_requested_to": "has requested to",
+    "is": "is"
 }

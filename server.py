@@ -456,6 +456,9 @@ async def ws_endpoint(websocket: WebSocket):
                     talk_keys[talk_key] = {"from_player_client_id": other_player.client_id, "to_player_client_id": client_id, "from_player": player.player_turn, "action_type": action_type, "piece_id": piece_id}
                     await manager.send_to(other_player.client_id, {"type": "action_talk", "action_type": action_type, "piece_id": piece_id, "from_player": player.player_turn, "from_player_color": player.color, "talk_key": talk_key})
                     await manager.send_to(client_id, {"type": "__action", "status": "ok", **history[TURNO], "talk_key": talk_key})
+                    others_players = list(filter(lambda p: p.client_id != client_id and p.client_id != other_player.client_id, Players))
+                    for p in others_players:
+                        await manager.send_to(p.client_id, {"type": "info_action_talk", "action_type": action_type, "piece_id": piece_id, "from_player": player.player_turn, "from_player_color": player.color, "to_player": other_player.player_turn, "to_player_color": other_player.color})
             elif msg["type"] in list(talk_keys.keys()):
                 if msg["status"] == "waiting":
                     continue

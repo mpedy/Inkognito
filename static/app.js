@@ -698,6 +698,12 @@ class Game{
             },
             "endTurn": function(){
                 this.endTurn();
+            },
+            "info_action_talk": function(message){
+                let from_player_color = message["from_player_color"];
+                let to_player_color = message["to_player_color"];
+                let action_type = message["action_type"];
+                this.gameUI.showMessage(`${t("player")} <span class="strong ${from_player_color}">${t(from_player_color)}</span> ${t("has_requested_to")} ${t("player")} <span class="strong ${to_player_color}">${t(to_player_color)}</span> <span class="strong">${t(action_type)}</span> ${t("is")}.`);
             }
         };
     }
@@ -797,6 +803,9 @@ class Game{
         })
         this.comm.addConnection("action_talk", (comm, message)=>{
             this.handlers["action_talk"].bind(this)(message);
+        });
+        this.comm.addConnection("info_action_talk", (comm, message)=>{
+            this.handlers["info_action_talk"].bind(this)(message);
         });
         this.comm.startPingPong(600000);
         this.comm.addConnection("register_player",(comm,message)=>{

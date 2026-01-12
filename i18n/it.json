@@ -22,5 +22,7 @@
     "turn_of": "Tocca a",
     "you_must_free_captured_pieces_before_ending_turn": "Devi liberare i pezzi catturati prima di terminare il tuo turno",
     "processing_your_request": "Elaborazione della tua richiesta",
-    "request_sent_waiting_for_answer": "Richiesta inviata, in attesa di una risposta"
+    "request_sent_waiting_for_answer": "Richiesta inviata, in attesa di una risposta",
+    "has_requested_to": "ha richiesto a",
+    "is": "è"
 }

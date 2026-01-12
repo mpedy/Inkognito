@@ -279,3 +279,15 @@ img[src="static/yellow_medium.png"]{
     min-height: 110%;
     align-self: end;
 }
+span.red{
+    color: red;
+}
+span.blue{
+    color: blue;
+}
+span.green{
+    color: green;
+}
+span.yellow{
+    color: yellow;
+}
