@@ -264,3 +264,18 @@ g.captured{
     max-width: 80vw;
     z-index: 1000;
 }
+img[src="static/blue_short.png"],
+img[src="static/red_short.png"],
+img[src="static/green_short.png"],
+img[src="static/yellow_short.png"]{
+    max-height: 80px;
+    align-self: end;
+}
+
+img[src="static/blue_medium.png"],
+img[src="static/red_medium.png"],
+img[src="static/green_medium.png"],
+img[src="static/yellow_medium.png"]{
+    min-height: 110%;
+    align-self: end;
+}
