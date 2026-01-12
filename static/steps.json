@@ -100,7 +100,7 @@
         "step_38": {"sea": ["step_34","step_42"], "land": ["step_33","step_32"]},
         "step_39": {"sea": ["step_31","step_40","step_41"], "land": ["step_31"]},
         "step_40": {"sea": ["step_39","step_42"], "land": []},
-        "step_41": {"sea": ["step_39","step_43","step_45"], "land": []},
+        "step_41": {"sea": ["step_39","step_43","step_45"], "land": ["step_46"]},
         "step_42": {"sea": ["step_38","step_40","step_43"], "land": ["step_34","step_49"]},
         "step_43": {"sea": ["step_42","step_41","step_44"], "land": ["step_49"]},
         "step_44": {"sea": ["step_43"], "land": ["step_53","step_47"]},
