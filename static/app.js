@@ -860,7 +860,7 @@ var game = new Game();
 document.querySelectorAll('#canovaccio>table>tbody>tr>td>input').forEach(elem => {
     elem.addEventListener('focus', (event) => {
         var text = elem.getAttribute("data-text");
-        if( text === null){
+        if( text === null || text === ""){
             elem.setAttribute("data-text", "x");
             elem.value = "x";
             document.activeElement.blur();
@@ -870,7 +870,7 @@ document.querySelectorAll('#canovaccio>table>tbody>tr>td>input').forEach(elem =>
             document.activeElement.blur();
         }else if(text == "o"){
             elem.setAttribute("data-text", "");
-            elem.value = "";
+            elem.value = null;
             document.activeElement.blur();
         }
     });
