@@ -392,9 +392,11 @@ class GameUI{
         }
     };
     freePiece(pieceId){
+        debugger;
         let pieceElem = this.board.getElementById(pieceId);
         pieceElem.classList.remove("captured");
-        document.getElementById(`${pieceId}_captured`).classList.add("hidden");
+        this.game.capturedPieceSelected.classList.add("hidden")
+        this.game.capturedPieceSelected.classList.remove("selected");
         this.game.capturedPieces = this.game.capturedPieces.filter(p => p !== pieceId);
         document.getElementById("capture_choice").classList.add("hidden");
     };
