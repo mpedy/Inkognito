@@ -538,6 +538,11 @@
          .pieces_hidden{
             display: none;
          }
+         circle.last_move_highlight{
+            display: inline !important;
+            stroke: #FFFF00 !important;
+            stroke-width: 6 !important;
+         }
       </style>
     </g>
   </g>
