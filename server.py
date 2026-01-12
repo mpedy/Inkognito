@@ -503,7 +503,7 @@ async def ws_endpoint(websocket: WebSocket):
                     history[TURNO]["turn"] = "finished"
                     await manager.send_to(client_id, {"type": "end_turn", "status": "ok", **history[TURNO]})
                     history.pop(TURNO)
-                    TURNO = orders[(orders.index(TURNO)+1)%4]
+                    TURNO = orders[(orders.index(TURNO)+1)%len(orders)]
                     history[TURNO] = {}
                     await manager.sendPositionsToAll()
 
