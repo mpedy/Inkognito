@@ -411,7 +411,6 @@ async def ws_endpoint(websocket: WebSocket):
             elif msg["type"] == "__start_turn":
                 player_key = msg["data"]["player_key"]
                 player = list(filter(lambda p: p.key == player_key, Players))[0]
-                history[TURNO].setdefault("talks", [])
                 if TURNO != player.player_turn:
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "not_your_turn", **history[TURNO]})
                     continue
@@ -419,6 +418,7 @@ async def ws_endpoint(websocket: WebSocket):
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "turn_not_finished", **history[TURNO]})
                     continue
                 else:
+                    history[TURNO].setdefault("talks", [])
                     prophecy_result = profetizza()
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
