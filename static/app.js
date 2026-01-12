@@ -204,7 +204,7 @@ class PlayerUI{
     setImg(color, bodytype, mission){
         let src = "static/" + color+"_"+bodytype+".png";
         this.uiElement.querySelector("#player_img").src = src;
-        this.uiElement.querySelector("#player_mission").src="static/mission_"+mission+".png";
+        this.uiElement.querySelector("#player_mission").src="static/mission_"+mission.toUpperCase()+".png";
     }
 }
 
