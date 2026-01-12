@@ -508,6 +508,7 @@ class Game{
         this.truecardSelected = [];
         this.captureKeys = [];
         this.talk_key = undefined;
+        this.waitingForTalkAnswer = false;
         this.answer_received = 0;
         this.setup();
     };
@@ -526,6 +527,10 @@ class Game{
                 console.log("Step clicked: "+stepIndex);
                 let self = this;
                 if(this.capturedPieceSelected){
+                    if(this.waitingForTalkAnswer){
+                        this.gameUI.showMessage(t("you_are_waiting_for_an_answer"));
+                        return;
+                    }
                     let pieceId = this.capturedPieceSelected.getAttribute("data-piece-id");
                     this.comm.sendAndWait({
                         "type": "__can_free_piece",
@@ -585,7 +590,7 @@ class Game{
             },
             "pieceClicked": function(pieceId, pieceElem){
                 console.log("Piece clicked: "+pieceId);
-                if(this.pieceClicked && this.pieceClicked !== pieceElem && this.moveSelected !== null){
+                if(this.pieceClicked && this.pieceClicked !== pieceElem && this.moveSelected !== null && this.capturedPieceSelected == null){
                     return this.handlers["stepClicked"].bind(this)(pieceElem.getAttribute("data-step"), this.gameUI.board.querySelector("#step_"+pieceElem.getAttribute("data-step")));
                 }
                 this.gameUI.highlightPiece(pieceElem);
@@ -607,6 +612,8 @@ class Game{
                     document.getElementById("capture_choice").classList.remove("hidden");
                     if(pieceId == "ambassador_ambassador"){
                         document.getElementById("which").classList.remove("hidden");
+                    }else{
+                        document.getElementById("which").classList.add("hidden");
                     }
                 }else{
                     if(this.capturedPieceSelected === pieceElem){
@@ -647,11 +654,13 @@ class Game{
                     console.log(response);
                     if(response["status"] == "ok"){
                         gameui.showMessage(t("request_sent_waiting_for_answer"));
+                        self.waitingForTalkAnswer = true;
                         comm.sendAndWait({
                             "type": response["talk_key"],
                             "status": "waiting"
                         }).then(function(final_response){
                             final_response = JSON.parse(final_response);
+                            self.waitingForTalkAnswer = false;
                             if(final_response["status"] == "answered"){
                                 gameui.hideMessage();
                                 console.log("Talk answered: ", final_response);
@@ -744,6 +753,7 @@ class Game{
             return;
         }
         this.turn_started = true;
+        this.moveSelected = null;
         this.comm.sendCraftedMessageAndWait("__start_turn", {
             "player_key": this.me.key
         }).then((response) => {
