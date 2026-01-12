@@ -24,5 +24,9 @@
     "processing_your_request": "Elaborazione della tua richiesta",
     "request_sent_waiting_for_answer": "Richiesta inviata, in attesa di una risposta",
     "has_requested_to": "ha richiesto a",
-    "is": "è"
+    "is": "è",
+    "tall": "Alto",
+    "medium": "Medio",
+    "short": "Basso",
+    "large": "Cicciotto"
 }

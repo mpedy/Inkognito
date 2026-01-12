@@ -24,5 +24,9 @@
     "processing_your_request": "Processing your request",
     "request_sent_waiting_for_answer": "Request sent, waiting for an answer",
     "has_requested_to": "has requested to",
-    "is": "is"
+    "is": "is",
+    "tall": "Tall",
+    "medium": "Medium",
+    "short": "Short",
+    "large": "Large"
 }
