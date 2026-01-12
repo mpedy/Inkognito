@@ -359,8 +359,6 @@ class GameUI{
         if(!this.game.balls){
             this.game.balls = this.prophecyUIElem.querySelectorAll(".prophecy_ball");
         }
-        this.game.balls[mv].style.opacity = "0.3";
-        this.game.balls[mv].style.cursor = "not-allowed";
         this.game.balls[mv].setAttribute("data-used", "1");
     };
     selectMove(mv){
@@ -466,6 +464,11 @@ class GameUI{
         this.message_box.classList.add("hidden");
         this.message_box.querySelector("#message_box_content").innerHTML = "";
     };
+    resetProphecyBalls(){
+        this.prophecyUIElem.querySelectorAll(".prophecy_ball[data-used='1']").forEach(ball => {
+            ball.removeAttribute("data-used");
+        });
+    }
 }
 
 class Game{
@@ -726,6 +729,7 @@ class Game{
             "player_key": this.me.key
         });
         this.turn_started = false;
+        this.gameUI.resetProphecyBalls()
     }
     startTurn(){
         if(this.turn_started && this.turn_started === true){
