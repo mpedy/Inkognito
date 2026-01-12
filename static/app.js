@@ -350,8 +350,9 @@ class GameUI{
             balls[i].classList.remove("selected_move");
             if(results[i] !== "white"){
                 balls[i].addEventListener("click", function(){this.game.balls[i].getAttribute("data-used") === "1" ? null : this.game.selectMove(i)}.bind(this, i));
+                balls[i].classList.remove("not_allowed");
             }else{
-                balls[i].style.cursor = "not-allowed";
+                balls[i].classList.add("not_allowed");
             }
         }
     };
