@@ -210,7 +210,7 @@ class PlayerUI{
     setImg(color, bodytype, mission){
         let src = "static/" + color+"_"+bodytype+".png";
         this.uiElement.querySelector("#player_img").src = src;
-        this.uiElement.querySelector("#player_mission").src="static/mission_"+mission.toUpperCase()+".png";
+        this.uiElement.querySelector("#player_mission").src="static/mission_"+mission.toLowerCase()+".png";
     }
 }
 
@@ -282,7 +282,7 @@ class GameUI{
             personalityElem.addEventListener("click", this.game.handlers["talkRequestCardClicked"].bind(this.game, "personality", i, personalityElem));
         }
         let truecardElem = this.myCardsElem_truecards.querySelector("img[data-truecard='mission']")
-        truecardElem.src = "static/mission_"+mission+".png";
+        truecardElem.src = "static/mission_"+mission.toLowerCase()+".png";
         truecardElem.addEventListener("click", this.game.handlers["talkRequestCardClicked"].bind(this.game, "mission", mission, truecardElem));
         truecardElem = this.myCardsElem_truecards.querySelector("img[data-truecard='bodytype']")
         truecardElem.src = "static/white_"+bodytype+".png";
