@@ -259,6 +259,8 @@ class GameUI{
         this.endTurnBtn = document.getElementById("end_turn");
         this.endTurnBtn.addEventListener("click", this.game.handlers["endTurn"].bind(this.game));
         this.player_turn = document.getElementById("player_turn");
+        this.message_box = document.getElementById("message_box");
+        this.message_box.querySelector("#message_box_close").addEventListener("click", this.hideMessage.bind(this));
     };
     popolateTrueCards(){
         this.myCardsElem = document.getElementById("my_cards");
@@ -456,6 +458,14 @@ class GameUI{
         this.player_turn.children[0].classList.remove("red","blue","green","yellow");
         this.player_turn.children[0].classList.add(player.getColor());
     };
+    showMessage(message){
+        this.message_box.classList.remove("hidden");
+        this.message_box.querySelector("#message_box_content").innerHTML = message;
+    };
+    hideMessage(){
+        this.message_box.classList.add("hidden");
+        this.message_box.querySelector("#message_box_content").innerHTML = "";
+    };
 }
 
 class Game{
@@ -609,6 +619,7 @@ class Game{
                 pieceElem.classList.toggle("selected");
             },
             "whatOrWhoClicked": function(action_type){
+                this.gameUI.showMessage(t("processing_your_request"));
                 let pieceId = this.capturedPieceSelected.getAttribute("data-piece-id");
                 console.log("What clicked for captured piece: ", pieceId);
                 let comm = this.comm;
@@ -624,12 +635,14 @@ class Game{
                     response = JSON.parse(response);
                     console.log(response);
                     if(response["status"] == "ok"){
+                        gameui.showMessage(t("request_sent_waiting_for_answer"));
                         comm.sendAndWait({
                             "type": response["talk_key"],
                             "status": "waiting"
                         }).then(function(final_response){
                             final_response = JSON.parse(final_response);
                             if(final_response["status"] == "answered"){
+                                gameui.hideMessage();
                                 console.log("Talk answered: ", final_response);
                                 self.answer_received += 1;
                                 gameui.showAnswerReceived(final_response["data"]);
@@ -698,6 +711,10 @@ class Game{
         this.gameUI.selectMove(mv);
     }
     endTurn(){
+        if(this.capturedPieces.length > 0){
+            this.gameUI.showMessage(t("you_must_free_captured_pieces_before_ending_turn"));
+            return;
+        }
         this.gameUI.showProphecyResults(["white","white","white"]);
         this.comm.sendCraftedMessage("end_turn",{
             "player_key": this.me.key

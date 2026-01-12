@@ -19,5 +19,8 @@
     "wants_to_know": "wants to know",
     "you_are": "you are",
     "with_ambassador": "with the Ambassador",
-    "turn_of": "Turn of"
+    "turn_of": "Turn of",
+    "you_must_free_captured_pieces_before_ending_turn": "You must free captured pieces before ending your turn",
+    "processing_your_request": "Processing your request",
+    "request_sent_waiting_for_answer": "Request sent, waiting for an answer"
 }
