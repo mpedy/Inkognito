@@ -229,6 +229,11 @@ class GameUI{
         this.game = game;
         this.prophecyUIElem = document.getElementById("prophecy_ui");
         this.prophecyUIElem.querySelector("#start_turn").addEventListener("click", this.game.startTurn.bind(this.game));
+        let balls = this.prophecyUIElem.querySelectorAll(".prophecy_ball");
+        for(let i=0; i<balls.length; i++){
+            balls[i].classList.remove("selected_move");
+            balls[i].addEventListener("click", function(){this.game.balls[i].getAttribute("data-used") === "1" || this.game.balls[i].getAttribute("data-color") === "white" ? null : this.game.selectMove(i)}.bind(this, i));
+        }
         this.pieces_img_src = {
             "red_tall": "static/red_tall.png",
             "red_short": "static/red_short.png",
@@ -561,7 +566,7 @@ class Game{
                                     this.pieceClicked.id.split("_")[1],
                                     stepElem.id
                                 );
-                                if(response["talks"].length > 0){
+                                if(response["talks"] && response["talks"].length > 0){
                                     for(var talk of response["talks"]){
                                         this.handleTalks(talk);
                                     }
@@ -755,7 +760,7 @@ class Game{
                 for(var i of response["prophecy_used"]){
                     this.useMove(i);
                 }
-                if(response["talks"].length > 0){
+                if(response["talks"] && response["talks"].length > 0){
                     for(var talk of response["talks"]){
                         this.handleTalks(talk);
                     }
