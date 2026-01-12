@@ -502,6 +502,7 @@ async def ws_endpoint(websocket: WebSocket):
                     history.pop(TURNO)
                     TURNO = orders[(orders.index(TURNO)+1)%4]
                     history[TURNO] = {}
+                    await manager.sendPositionsToAll()
 
 
     except WebSocketDisconnect:

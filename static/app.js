@@ -34,6 +34,12 @@ class Player{
         this.mission=mission;
         this.player_turn=player_turn;
     }
+    getColor(){
+        return this.color.toString().split("Symbol(")[1].split(")")[0];
+    }
+    getMyBodytype(){
+        return this.bodytype.toString().split("Symbol(")[1].split(")")[0];
+    }
 }
 class Communication{
     constructor(){
@@ -252,6 +258,7 @@ class GameUI{
         this.whoBtn.addEventListener("click", this.game.handlers["whatOrWhoClicked"].bind(this.game, "who"));
         this.endTurnBtn = document.getElementById("end_turn");
         this.endTurnBtn.addEventListener("click", this.game.handlers["endTurn"].bind(this.game));
+        this.player_turn = document.getElementById("player_turn");
     };
     popolateTrueCards(){
         this.myCardsElem = document.getElementById("my_cards");
@@ -440,6 +447,14 @@ class GameUI{
         });
         pieceElem.children[0].classList.add("last_move_highlight");
         pieceElem.children[1].classList.add("last_move_highlight");
+    };
+    showTurn(player){
+        if(this.player_turn){
+            this.player_turn = document.getElementById("player_turn")
+        }
+        this.player_turn.children[0].innerText = t(player.getColor()).toUpperCase();
+        this.player_turn.children[0].classList.remove("red","blue","green","yellow");
+        this.player_turn.children[0].classList.add(player.getColor());
     };
 }
 
@@ -829,6 +844,9 @@ class Game{
                 if(message["turn"] && message["turn"] != this.me.player_turn){
                     this.gameUI.showLastMove(message["last_move"]);
                 }
+            }
+            if(message["turn"]){
+                this.gameUI.showTurn(this.players.filter(p => p.player_turn == message["turn"])[0]);
             }
             this.gameUI.allPiecesArePositioned = true;
         })
