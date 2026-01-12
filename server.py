@@ -39,6 +39,7 @@ def generateTalkKey():
     return str(uuid.uuid4())
 
 TURNO = None
+orders = []
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
@@ -119,12 +120,15 @@ Players = [Player1, Player2, Player3, Player4]
 def createNewPlayers():
     global TURNO
     global history
+    global orders
     bodies = np.random.choice(BODYTYPES, size=4, replace=False)
     colors = np.random.choice(COLORS, size=4, replace=False)
     missions = np.random.choice(MISSIONS, size=4, replace=False)
     personalities = np.random.choice(PERSONALITY, size=4, replace=False)
     # TODO: fix starting player randomization, now it's 1 for testing
-    starting = random.randint(1,4)*0+1
+    orders = [int(i) for i in np.random.choice([1,2,3,4], size=4, replace=False)]
+    orders = [1,2,3,4]  # for testing
+    starting = orders[0]
     TURNO = starting
     print("Generated missions: ", missions)
     print("Generated bodies: ", bodies)
@@ -220,9 +224,9 @@ class ConnectionManager:
         ws = self.active.get(client_id)
         if ws:
             await ws.send_text(json.dumps(message))
-    
-    async def sendPositionsTo(self, client_id: str):
-        positions = {
+
+    def getPositionsData(self):
+        return {
             Player1.color: {
                 "pieces": Player1.positions,
                 "captured": Player1.captured
@@ -244,32 +248,14 @@ class ConnectionManager:
                 "captured": ambassador_is_captured
             }
         }
-        await self.send_to(client_id, {"type": "update_positions", "positions": positions})
+
+    async def sendPositionsTo(self, client_id: str):
+        positions = self.getPositionsData()
+        await self.send_to(client_id, {"type": "update_positions", "positions": positions, "last_move": history[TURNO].get("last_move", None), "turn": TURNO})
     
     async def sendPositionsToAll(self):
-        positions = {
-            Player1.color: {
-                "pieces": Player1.positions,
-                "captured": Player1.captured
-            },
-            Player2.color: {
-                "pieces": Player2.positions,
-                "captured": Player2.captured
-            },
-            Player3.color: {
-                "pieces": Player3.positions,
-                "captured": Player3.captured
-            },
-            Player4.color: {
-                "pieces": Player4.positions,
-                "captured": Player4.captured
-            },
-            "ambassador": {
-                "pieces": int(ambassador_position.split("_")[1]),
-                "captured": ambassador_is_captured
-            }
-        }
-        await self.broadcast({"type": "update_positions", "positions": positions})
+        positions = self.getPositionsData()
+        await self.broadcast({"type": "update_positions", "positions": positions, "last_move": history[TURNO].get("last_move", None), "turn": TURNO})
 
     async def broadcast(self, message: dict):
         data = json.dumps(message)
@@ -302,37 +288,42 @@ async def ws_endpoint(websocket: WebSocket):
             print("Ricevuto messaggio: ", msg)
             msg = json.loads(msg)
             if msg["type"] == "register_player":
-                await manager.sendPositionsTo(client_id)
                 key = msg["key"]
                 player = list(filter(lambda p: p.key == key, Players))
                 if len(player) > 0:
                     player = player[0]
                     player.client_id = client_id
                     await manager.send_to(client_id, {"type": "register_player", "player_info": player.toDict()})
-                    await manager.RequestPlayersInfo()
+                    #await manager.RequestPlayersInfo()
+                    #await manager.sendPositionsTo(client_id)
                     continue
                 if Player1.key is None:
                     Player1.key = key
                     Player1.client_id = client_id
                     await manager.send_to(client_id, {"type": "register_player", "player_info": Player1.toDict()})
-                    await manager.RequestPlayersInfo()
+                    #await manager.RequestPlayersInfo()
+                    #await manager.sendPositionsTo(client_id)
                 elif Player2.key is None:
                     Player2.key = key
                     Player2.client_id = client_id
                     await manager.send_to(client_id, {"type": "register_player", "player_info": Player2.toDict()})
-                    await manager.RequestPlayersInfo()
+                    #await manager.RequestPlayersInfo()
+                    #await manager.sendPositionsTo(client_id)
                 elif Player3.key is None:
                     Player3.key = key
                     Player3.client_id = client_id
                     await manager.send_to(client_id, {"type": "register_player", "player_info": Player3.toDict()})
-                    await manager.RequestPlayersInfo()
+                    #await manager.RequestPlayersInfo()
+                    #await manager.sendPositionsTo(client_id)
                 elif Player4.key is None:
                     Player4.key = key
                     Player4.client_id = client_id
                     await manager.send_to(client_id, {"type": "register_player", "player_info": Player4.toDict()})
                     await manager.RequestPlayersInfo()
+                    #await manager.sendPositionsTo(client_id)
             elif msg["type"] == "request_players_info":
                 await manager.RequestPlayersInfo()
+                await manager.sendPositionsTo(client_id)
             elif msg["type"] == "ping":
                 await manager.send_to(client_id, {"type": "ping"})
             elif msg["type"] == "pong":
@@ -384,24 +375,28 @@ async def ws_endpoint(websocket: WebSocket):
                     history[TURNO]["prophecy_used"].append(move_index)
                     history[TURNO].setdefault("talks", [])
                     # Case if capture other pieces or ambassador step into one of its player position or player into ambassador position
-                    if to_step in other_players_position or to_step == ambassador_position or (using_move=="black" and to_step in player.positions):
-                        print(f"step_{to_step} occupied by another player, removing piece from the board")
-                        other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
-                        history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key], "capture_key": f"__{generateTalkKey()}"})
-                        if to_step == ambassador_position[0]:
-                            setAmbassadorCaptured(True)
-                        else:
-                            other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
-                        player.movePiece(from_step, to_step)
-                        if piece_id == "ambassador_ambassador":
-                            setAmbassadorCaptured(True)
-                    else:
-                        if piece_id == "ambassador_ambassador":
-                            moveAmbassador(to_step)
-                        else:
-                            player.movePiece(from_step, to_step)
+                    if to_step in other_players_position or f"step_{to_step}" == ambassador_position or (using_move=="black" and to_step in player.positions):
                         if to_step in other_players_position:
+                            print(f"step_{to_step} occupied by another player, removing piece from the board")
                             other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
+                            history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key], "capture_key": f"__{generateTalkKey()}"})
+                            other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
+                            #player.movePiece(from_step, to_step)
+                            if to_step == ambassador_position:
+                                setAmbassadorCaptured(True)
+                            #if piece_id == "ambassador_ambassador":
+                            #    setAmbassadorCaptured(True)
+                        elif f"step_{to_step}" == ambassador_position or (using_move=="black" and to_step in player.positions):
+                            print(f"step_{to_step} is ambassador position, capturing ambassador")
+                            history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, "ambassador_ambassador"], "between_ids": [player.key, "ambassador_player"], "capture_key": f"__{generateTalkKey()}"})
+                            setAmbassadorCaptured(True)
+                            #moveAmbassador(to_step)
+                            #player.movePiece(from_step, to_step)
+                    if using_move == "black":
+                        moveAmbassador(to_step)
+                    else:
+                        player.movePiece(from_step, to_step)
+                    history[TURNO]["last_move"] = {"piece_id": piece_id, "from_step": from_step, "to_step": to_step, "using_move": using_move}
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "ok", **history[TURNO]})
                     await manager.sendPositionsToAll()
                 else:
@@ -425,7 +420,6 @@ async def ws_endpoint(websocket: WebSocket):
                     continue
                 else:
                     prophecy_result = profetizza()
-                    #prophecy_result = ["yellow", "yellow", "yellow"]  # for testing
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
                     history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
@@ -493,6 +487,7 @@ async def ws_endpoint(websocket: WebSocket):
                         other_p.movePiece(other_p.getStepFromPiece(piece_id.split("_")[1]), to_step)
                         other_p.captured.remove(piece_id)
                     history[TURNO]["talks"].pop(next(i for i,talk in enumerate(history[TURNO]["talks"]) if talk.get("capture_key", None) == capture_key))
+                    history[TURNO]["last_move"] = {"piece_id": piece_id, "from_step": "captured", "to_step": to_step, "using_move": "free"}
                     await manager.send_to(client_id, {"type": "__can_free_piece", "status": "ok", **history[TURNO]})
                     await manager.sendPositionsToAll()
             elif msg["type"] == "end_turn":
@@ -505,9 +500,7 @@ async def ws_endpoint(websocket: WebSocket):
                     history[TURNO]["turn"] = "finished"
                     await manager.send_to(client_id, {"type": "end_turn", "status": "ok", **history[TURNO]})
                     history.pop(TURNO)
-                    TURNO+=1
-                    if TURNO > 4:
-                        TURNO = 1
+                    TURNO = orders[(orders.index(TURNO)+1)%4]
                     history[TURNO] = {}
 
 
