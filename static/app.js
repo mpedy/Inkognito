@@ -241,6 +241,7 @@ class GameUI{
             "yellow_medium": "static/yellow_medium.png",
             "yellow_large": "static/yellow_large.png"
         }
+        this.allPiecesArePositioned = false;
         this.prisonUIElem = document.getElementById("captured_pieces");
         this.prisonUIElem.querySelectorAll("div.capturedpiece").forEach(elem => {
             elem.addEventListener("click", this.game.handlers["capturedPieceClicked"].bind(this.game, elem.getAttribute("data-piece-id"), elem));
@@ -295,10 +296,12 @@ class GameUI{
             pieceElem.addEventListener("click", this.game.handlers["pieceClicked"].bind(this.game, pieceId, pieceElem));
             this.pieces[pieceId] = pieceElem;
         }
-        let stepElem = this.board.querySelector("#step_"+step);
-        if(stepElem){
-            pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
-            pieceElem.setAttribute("data-step", step);
+        if(!this.allPiecesArePositioned){
+            let stepElem = this.board.querySelector("#step_"+step);
+            if(stepElem){
+                pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
+                pieceElem.setAttribute("data-step", step);
+            }
         }
     }
     addPieceToStep(color, bodytype, step, board){
@@ -312,10 +315,12 @@ class GameUI{
             pieceElem.addEventListener("click", this.game.handlers["pieceClicked"].bind(this.game, pieceId, pieceElem));
             this.pieces[pieceId] = pieceElem;
         }
-        let stepElem = board.querySelector("#step_"+step);
-        if(stepElem){
-            pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
-            pieceElem.setAttribute("data-step", step);
+        if(!this.allPiecesArePositioned){
+            let stepElem = board.querySelector("#step_"+step);
+            if(stepElem){
+                pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
+                pieceElem.setAttribute("data-step", step);
+            }
         }
     };
     movePieceFromStepToStep(color, bodytype, toStep){
@@ -324,6 +329,9 @@ class GameUI{
         let stepElem = this.board.querySelector("#"+toStep);
         pieceElem.setAttribute("data-step", toStep.split("step_")[1]);
         pieceElem.style.transform = `translate(${stepElem.getAttribute("cx") - this.pieces_width/2}px, ${stepElem.getAttribute("cy") - this.pieces_width/2}px)`;
+        this.board.querySelectorAll(".last_move_highlight").forEach(elem => {
+            elem.classList.remove("last_move_highlight");
+        });
     };
     showProphecyResults(results){
         let balls = this.prophecyUIElem.querySelectorAll(".prophecy_ball");
@@ -420,7 +428,19 @@ class GameUI{
                 elem.classList.toggle("pieces_hidden");
             });
         }.bind(this));
-    }
+    };
+    showLastMove(last_move){
+        let pieceId = last_move["piece_id"];
+        let from_step = last_move["from_step"];
+        let to_step = last_move["to_step"];
+        let using_move = last_move["using_move"];
+        let pieceElem = this.board.getElementById(pieceId);
+        this.board.querySelectorAll(".last_move_highlight").forEach(elem => {
+            elem.classList.remove("last_move_highlight");
+        });
+        pieceElem.children[0].classList.add("last_move_highlight");
+        pieceElem.children[1].classList.add("last_move_highlight");
+    };
 }
 
 class Game{
@@ -805,6 +825,12 @@ class Game{
                     }
                 }
             }
+            if(message["last_move"] && message["last_move"] != null){
+                if(message["turn"] && message["turn"] != this.me.player_turn){
+                    this.gameUI.showLastMove(message["last_move"]);
+                }
+            }
+            this.gameUI.allPiecesArePositioned = true;
         })
         this.comm.sendCraftedMessage("request_players_info");
     };
