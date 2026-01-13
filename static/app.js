@@ -76,10 +76,10 @@ class Communication{
                 return;
             }
             this._retries--;
-            console.log(`Attempt remained: ${this._retries} - WebSocket closed, attempting to reconnect in 3 seconds...`);
+            console.log(`Attempt remained: ${this._retries} - WebSocket closed, attempting to reconnect in 5 seconds...`);
             setTimeout(() => {
                 this.initWebsocket();
-            }, 3000);
+            }, 5000);
         };
     };
     startWebSocket(){
