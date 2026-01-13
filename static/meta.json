@@ -1,0 +1,27 @@
+{
+  "inputs": {
+    "static/app.js": {
+      "bytes": 45690,
+      "imports": []
+    }
+  },
+  "outputs": {
+    "static/app.YFAOL7A4.js.map": {
+      "imports": [],
+      "exports": [],
+      "inputs": {},
+      "bytes": 73055
+    },
+    "static/app.YFAOL7A4.js": {
+      "imports": [],
+      "exports": [],
+      "entryPoint": "static/app.js",
+      "inputs": {
+        "static/app.js": {
+          "bytesInOutput": 25994
+        }
+      },
+      "bytes": 26047
+    }
+  }
+}
