@@ -330,7 +330,6 @@ async def ws_endpoint(websocket: WebSocket):
 
     # Tell client its ID
     await manager.send_to(client_id, {"type": "update_id", "client_id": client_id, "game_uid": GAME_UID})
-    await manager.broadcast({"type": "game_action", "data": {"turn": TURNO}})
     try:
         while True:
             msg = await websocket.receive_text()
