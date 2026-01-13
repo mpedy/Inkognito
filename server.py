@@ -329,7 +329,7 @@ async def ws_endpoint(websocket: WebSocket):
     hb_task = asyncio.create_task(heartbeat())
 
     # Tell client its ID
-    await manager.send_to(client_id, {"type": "update_id", "client_id": client_id})
+    await manager.send_to(client_id, {"type": "update_id", "client_id": client_id, "game_uid": GAME_UID})
     await manager.broadcast({"type": "game_action", "data": {"turn": TURNO}})
     try:
         while True:
@@ -485,7 +485,6 @@ async def ws_endpoint(websocket: WebSocket):
                     async with manager.game_lock:
                         history[TURNO].setdefault("talks", [])
                     prophecy_result = profetizza()
-                    prophecy_result = ["yellow", "yellow", "black"]
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
                     async with manager.game_lock:

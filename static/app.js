@@ -750,7 +750,21 @@ class Game{
                 let to_player_color = message["to_player_color"];
                 let action_type = message["action_type"];
                 this.gameUI.showMessage(`${t("player")} <span class="strong ${from_player_color}">${t(from_player_color)}</span> ${t("has_requested_to")} ${t("player")} <span class="strong ${to_player_color}">${t(to_player_color)}</span> <span class="strong">${t(action_type)}</span> ${t("is")}.`);
-            }
+            },
+            "update_id": function(message){
+                console.log("Update ID received: ", message);
+                let game_key = this.cookieManager.getCookie("game_key");
+                let server_game_key = message["game_uid"];
+                if(game_key === ""){
+                    this.cookieManager.setCookie("game_key", server_game_key, 365);
+                }else{
+                    if(game_key !== server_game_key){
+                        this.cookieManager.setCookie("game_key", server_game_key, 365);
+                        window.location.reload();
+                    }
+                }
+                this.gameUID = message["game_uid"];
+            },
         };
     }
     selectMove(mv){
@@ -842,6 +856,9 @@ class Game{
     setup(){
         this.generateSteps();
         this.me.key = this.cookieManager.getCookie("game_key");
+        this.comm.addConnection("update_id", (comm, message)=>{
+            this.handlers["update_id"].bind(this)(message);
+        })
         this.comm.addConnection("pong", (comm, message)=>{
             console.log("Pong received");
         })
