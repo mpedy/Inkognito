@@ -1,3 +1,4 @@
+console.log("App.js loaded");
 const Colors = Object.freeze({
     RED: Symbol('red'),
     BLUE: Symbol('blue'),
@@ -42,11 +43,11 @@ class Player{
     }
 }
 class Communication{
-    constructor(){
-        // Quando ci sarà una chiave univoca per il gioco (room):
-        //this.ws = new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws_"+window.location.pathname);
+    constructor(game){
+        this.game = game;
         this.connections = [];
-        this.initWebsocket();
+        this._MAX_RETRIES = 5;
+        this._retries = this._MAX_RETRIES;
     };
     initWebsocket(){
         this.ws = this.startWebSocket();
@@ -54,6 +55,11 @@ class Communication{
         this.setupWebSocketOnCloseHandler();
     }
     setupWebSocketHandlers(){
+        this.ws.onopen = (event) =>{
+            console.log("WebSocket connected.");
+            this.game.gameUI.setOnlineIndicator();
+            this._retries = this._MAX_RETRIES;
+        }
         this.ws.onmessage = (event) => {
             const message = JSON.parse(event.data);
             for(let conn of this.connections){
@@ -65,13 +71,21 @@ class Communication{
     };
     setupWebSocketOnCloseHandler(){
         this.ws.onclose = (event) => {
-            console.log("WebSocket closed, attempting to reconnect in 3 seconds...");
+            this.game.gameUI.setOfflineIndicator();
+            if(this._retries <= 0){
+                console.error("Max retries reached, could not reconnect WebSocket.");
+                return;
+            }
+            this._retries--;
+            console.log(`Attempt remained: ${this._retries} - WebSocket closed, attempting to reconnect in 3 seconds...`);
             setTimeout(() => {
                 this.initWebsocket();
             }, 3000);
         };
     };
     startWebSocket(){
+        // Quando ci sarà una chiave univoca per il gioco (room):
+        //this.ws = new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws_"+window.location.pathname);
         return new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws");
     }
     sendMessage(message){
@@ -396,7 +410,6 @@ class GameUI{
         }
     };
     freePiece(pieceId){
-        debugger;
         let pieceElem = this.board.getElementById(pieceId);
         pieceElem.classList.remove("captured");
         this.game.capturedPieceSelected.classList.add("hidden")
@@ -464,9 +477,10 @@ class GameUI{
         if(this.player_turn){
             this.player_turn = document.getElementById("player_turn")
         }
-        this.player_turn.children[0].innerText = t(player.getColor()).toUpperCase();
-        this.player_turn.children[0].classList.remove("red","blue","green","yellow");
-        this.player_turn.children[0].classList.add(player.getColor());
+        let player_turn_name = this.player_turn.querySelector("#player_turn_info>#player_turn_name");
+        player_turn_name.innerText = t(player.getColor()).toUpperCase();
+        player_turn_name.classList.remove("red","blue","green","yellow");
+        player_turn_name.classList.add(player.getColor());
     };
     showMessage(message){
         this.message_box.classList.remove("hidden");
@@ -480,19 +494,28 @@ class GameUI{
         this.prophecyUIElem.querySelectorAll(".prophecy_ball[data-used='1']").forEach(ball => {
             ball.removeAttribute("data-used");
         });
+    };
+    setOnlineIndicator(){
+        let indicator = document.getElementById("player_online_indicator");
+        indicator.innerHTML = `<span class="online"><img src="static/online.svg" alt="online">online</span>`;
+    };
+    setOfflineIndicator(){
+        let indicator = document.getElementById("player_online_indicator");
+        indicator.innerHTML = `<span class="offline"><img src="static/offline.svg" alt="offline">offline</span>`;
     }
 }
 
 class Game{
     constructor(){
         this.setupHandlers();
-        this.comm = new Communication();
+        this.comm = new Communication(this);
         this.cookieManager = new CookieManager();
         this.me = new Player();
         this.me.name = "ME";
         this.players = [this.me, new Player(),new Player(),new Player()];
         this.playerUI = new PlayerUI(this.players[0], "player_info_ui");
         this.gameUI = new GameUI(this);
+        this.comm.initWebsocket();
         this.otherPlayersUI = [
             new PlayerUI(this.players[1], "player_info_ui_1"),
             new PlayerUI(this.players[2], "player_info_ui_2"),

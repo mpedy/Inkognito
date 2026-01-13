@@ -241,6 +241,31 @@ g.captured{
     top: 10px;
     right: 10px;
 }
+#player_online_indicator{
+    margin-bottom: 20px;
+    text-align: right;
+    pointer-events: none;
+    user-select: none;
+}
+#player_online_indicator>span{
+    padding: 3px 40px;
+    border-radius: 30px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#player_online_indicator>span>img{
+    height: 16px;
+    position: absolute;
+    left: 20px;
+}
+#player_online_indicator>span.offline{
+    background-color: red;
+}
+#player_online_indicator>span.online{
+    background-color: green;
+}
 #player_turn_name{
     padding: 10px;
     background-color: white;
