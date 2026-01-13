@@ -45,8 +45,15 @@ class Communication{
     constructor(){
         // Quando ci sarà una chiave univoca per il gioco (room):
         //this.ws = new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws_"+window.location.pathname);
-        this.ws = this.startWebSocket()
         this.connections = [];
+        this.initWebsocket();
+    };
+    initWebsocket(){
+        this.ws = this.startWebSocket();
+        this.setupWebSocketHandlers();
+        this.setupWebSocketOnCloseHandler();
+    }
+    setupWebSocketHandlers(){
         this.ws.onmessage = (event) => {
             const message = JSON.parse(event.data);
             for(let conn of this.connections){
@@ -55,21 +62,18 @@ class Communication{
                 }
             }
         }
+    };
+    setupWebSocketOnCloseHandler(){
         this.ws.onclose = (event) => {
             console.log("WebSocket closed, attempting to reconnect in 3 seconds...");
             setTimeout(() => {
-                this.ws = this.startWebSocket();
+                this.initWebsocket();
             }, 3000);
         };
     };
     startWebSocket(){
         return new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws");
     }
-    startPingPong(interval){
-        setInterval(() => {
-            this.sendCraftedMessage("ping");
-        }, interval);
-    };
     sendMessage(message){
         if(this.ws.readyState !== WebSocket.OPEN){
             setTimeout(() => {
@@ -829,7 +833,6 @@ class Game{
         this.comm.addConnection("info_action_talk", (comm, message)=>{
             this.handlers["info_action_talk"].bind(this)(message);
         });
-        this.comm.startPingPong(600000);
         this.comm.addConnection("register_player",(comm,message)=>{
             this.me.bodytype = BodyTypes[message["player_info"]["bodytype"].toUpperCase()];
             this.me.color = Colors[message["player_info"]["color"].toUpperCase()];

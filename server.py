@@ -9,6 +9,8 @@ import uuid
 import numpy as np #replaceable for random.choice without replacement
 from fastapi.templating import Jinja2Templates
 from functools import lru_cache
+import asyncio
+import time
 
 history = {}
 talk_keys = {}
@@ -48,7 +50,6 @@ BODYTYPES = ['tall','short','medium','large']
 COLORS =  ['red','blue','green','yellow']
 MISSIONS = ["A","B","C","D"]
 PERSONALITY = ["Lord Fiddlebottom", "Colonel Bubble", "Madame Tsatsa", "Agent X"]
-client_ids = []
 
 associations = []
 
@@ -210,20 +211,37 @@ class ConnectionManager:
     def __init__(self):
         # client_id -> websocket
         self.active: Dict[str, WebSocket] = {}
+        self._lock = asyncio.Lock()
+        self.SEND_TIMEOUT = 5 #seconds
+        self.game_lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket) -> str:
         await websocket.accept()
         client_id = str(uuid.uuid4())
-        self.active[client_id] = websocket
+        async with self._lock:
+            self.active[client_id] = websocket
         return client_id
 
-    def disconnect(self, client_id: str):
-        self.active.pop(client_id, None)
+    async def disconnect(self, client_id: str):
+        async with self._lock:
+            ws = self.active.pop(client_id, None)
+        if ws:
+            await ws.close()
+
+    async def safe_send_text(self, client_id, data: str):
+        async with self._lock:
+            ws = self.active.get(client_id)
+        try:
+            await asyncio.wait_for(ws.send_text(data), timeout=self.SEND_TIMEOUT)
+            return True
+        except Exception as e:
+            print(f"Error sending message to client: {e}")
+            await self.disconnect(client_id=client_id)
+            return False
 
     async def send_to(self, client_id: str, message: dict):
-        ws = self.active.get(client_id)
-        if ws:
-            await ws.send_text(json.dumps(message))
+        #await ws.send_text(json.dumps(message))
+        return await self.safe_send_text(client_id, json.dumps(message))
 
     def getPositionsData(self):
         return {
@@ -259,8 +277,11 @@ class ConnectionManager:
 
     async def broadcast(self, message: dict):
         data = json.dumps(message)
-        for ws in list(self.active.values()):
-            await ws.send_text(data)
+        async with self._lock:
+            clients_ids = list(self.active.keys())
+        #for ws in clients:
+        #    await ws.send_text(data)
+        await asyncio.gather(*[self.safe_send_text(client_id=client_id, data=data) for client_id in clients_ids], return_exceptions=True)
     
     async def RequestPlayersInfo(self):
         players_info = []
@@ -272,18 +293,38 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+PING_EVERY = 15
+PONG_TIMEOUT = 10
 
 @app.websocket("/ws")
 async def ws_endpoint(websocket: WebSocket):
     global TURNO
     client_id = await manager.connect(websocket)
-    client_ids.append(client_id)
-    # comunico al client il suo id (utile per mandare messaggi mirati)
+    print(f"Client {client_id} connected")
+    last_pong = None
+    async def heartbeat():
+        nonlocal last_pong
+        try:
+            while True:
+                await asyncio.sleep(PING_EVERY)
+                if last_pong is not None and time.monotonic() - last_pong > (PING_EVERY + PONG_TIMEOUT):
+                    print(f"Client {client_id} timed out (no pong received)")
+                    try:
+                        await manager.disconnect(client_id)
+                    finally:
+                        return
+                print("Sending ping to client ", client_id)
+                await manager.send_to(client_id, {"type": "ping"})
+        except Exception as e:
+            print("Errore generico in hearbeat: ", e)
+            return
+    hb_task = asyncio.create_task(heartbeat())
+
+    # Tell client its ID
     await manager.send_to(client_id, {"type": "update_id", "client_id": client_id})
     await manager.broadcast({"type": "game_action", "data": {"turn": TURNO}})
     try:
         while True:
-            # opzionale: ricevere messaggi dal client
             msg = await websocket.receive_text()
             print("Ricevuto messaggio: ", msg)
             msg = json.loads(msg)
@@ -324,10 +365,13 @@ async def ws_endpoint(websocket: WebSocket):
             elif msg["type"] == "request_players_info":
                 await manager.RequestPlayersInfo()
                 await manager.sendPositionsTo(client_id)
+                continue
             elif msg["type"] == "ping":
                 await manager.send_to(client_id, {"type": "ping"})
             elif msg["type"] == "pong":
-                await manager.send_to(client_id, {"type": "pong"})
+                last_pong = time.monotonic()
+                continue
+                #await manager.send_to(client_id, {"type": "pong"})
             elif msg["type"] == "test":
                 await manager.send_to(client_id, {"type": "test", "data": "Test received"})
             elif msg["type"] == "__can_move_piece":
@@ -372,15 +416,17 @@ async def ws_endpoint(websocket: WebSocket):
                     print("To step: ", to_step)
                     print("Using move: ", using_move)
                     print("Move index: ", move_index)
-                    history[TURNO]["prophecy_used"].append(move_index)
-                    history[TURNO].setdefault("talks", [])
+                    async with manager.game_lock:
+                        history[TURNO]["prophecy_used"].append(move_index)
+                        history[TURNO].setdefault("talks", [])
                     # Case if capture other pieces or ambassador step into one of its player position or player into ambassador position
                     if to_step in other_players_position or f"step_{to_step}" == ambassador_position or (using_move=="black" and to_step in player.positions):
                         if to_step in other_players_position:
                             print(f"step_{to_step} occupied by another player, removing piece from the board")
                             other_player = list(filter(lambda p: to_step in p.positions, Players))[0]
-                            history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key], "capture_key": f"__{generateTalkKey()}"})
-                            other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
+                            async with manager.game_lock:
+                                history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, other_player.getPieceIDFromPosition(to_step)], "between_ids": [player.key, other_player.key], "capture_key": f"__{generateTalkKey()}"})
+                                other_player.captured.append(other_player.getPieceIDFromPosition(to_step))
                             #player.movePiece(from_step, to_step)
                             if to_step == ambassador_position:
                                 setAmbassadorCaptured(True)
@@ -388,7 +434,8 @@ async def ws_endpoint(websocket: WebSocket):
                             #    setAmbassadorCaptured(True)
                         elif f"step_{to_step}" == ambassador_position or (using_move=="black" and to_step in player.positions):
                             print(f"step_{to_step} is ambassador position, capturing ambassador")
-                            history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, "ambassador_ambassador"], "between_ids": [player.key, "ambassador_player"], "capture_key": f"__{generateTalkKey()}"})
+                            async with manager.game_lock:
+                                history[TURNO]["talks"].append({"type": "piece_captured", "from_step": from_step, "to_step": to_step, "using_move": using_move, "piece_id": piece_id, "between": [piece_id, "ambassador_ambassador"], "between_ids": [player.key, "ambassador_player"], "capture_key": f"__{generateTalkKey()}"})
                             setAmbassadorCaptured(True)
                             #moveAmbassador(to_step)
                             #player.movePiece(from_step, to_step)
@@ -396,7 +443,8 @@ async def ws_endpoint(websocket: WebSocket):
                         moveAmbassador(to_step)
                     else:
                         player.movePiece(from_step, to_step)
-                    history[TURNO]["last_move"] = {"piece_id": piece_id, "from_step": from_step, "to_step": to_step, "using_move": using_move}
+                    async with manager.game_lock:
+                        history[TURNO]["last_move"] = {"piece_id": piece_id, "from_step": from_step, "to_step": to_step, "using_move": using_move}
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "ok", **history[TURNO]})
                     await manager.sendPositionsToAll()
                 else:
@@ -418,12 +466,14 @@ async def ws_endpoint(websocket: WebSocket):
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "turn_not_finished", **history[TURNO]})
                     continue
                 else:
-                    history[TURNO].setdefault("talks", [])
+                    async with manager.game_lock:
+                        history[TURNO].setdefault("talks", [])
                     prophecy_result = profetizza()
                     #prophecy_result = ["yellow", "yellow", "black"]
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
-                    history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
+                    async with manager.game_lock:
+                        history[TURNO] = {"player": player.player_turn, "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []}
             elif msg["type"] == "__action":
                 action_type = msg["data"]["action_type"]
                 piece_id = msg["data"]["piece_id"]
@@ -438,8 +488,9 @@ async def ws_endpoint(websocket: WebSocket):
                 print(player)
                 print(other_player)
                 betweens = []
-                for talk in history[TURNO]["talks"]:
-                    betweens+= talk["between"]
+                async with manager.game_lock:
+                    for talk in history[TURNO]["talks"]:
+                        betweens+= talk["between"]
                 if TURNO != player.player_turn:
                     await manager.send_to(client_id, {"type": "__action", "status": "not_your_turn", **history[TURNO]})
                     continue
@@ -453,8 +504,9 @@ async def ws_endpoint(websocket: WebSocket):
                     await manager.send_to(client_id, {"type": "__action", "status": "piece_not_captured_this_turn", **history[TURNO]})
                     continue
                 else:
-                    talk_key = f"__{generateTalkKey()}"
-                    talk_keys[talk_key] = {"from_player_client_id": other_player.client_id, "to_player_client_id": client_id, "from_player": player.player_turn, "action_type": action_type, "piece_id": piece_id}
+                    async with manager.game_lock:
+                        talk_key = f"__{generateTalkKey()}"
+                        talk_keys[talk_key] = {"from_player_client_id": other_player.client_id, "to_player_client_id": client_id, "from_player": player.player_turn, "action_type": action_type, "piece_id": piece_id}
                     await manager.send_to(other_player.client_id, {"type": "action_talk", "action_type": action_type, "piece_id": piece_id, "from_player": player.player_turn, "from_player_color": player.color, "talk_key": talk_key})
                     await manager.send_to(client_id, {"type": "__action", "status": "ok", **history[TURNO], "talk_key": talk_key})
                     others_players = list(filter(lambda p: p.client_id != client_id and p.client_id != other_player.client_id, Players))
@@ -465,7 +517,8 @@ async def ws_endpoint(websocket: WebSocket):
                     continue
                 data = msg["answer"]
                 await manager.send_to(talk_keys[msg["type"]]["to_player_client_id"], {"type": msg["type"],"status": msg["status"], "data": data, "from_player": talk_keys[msg["type"]]["from_player"], "talk_key": msg["type"], "data": data})
-                talk_keys.pop(msg["type"], None)
+                async with manager.game_lock:
+                    talk_keys.pop(msg["type"], None)
             elif msg["type"] == "__can_free_piece":
                 piece_id = msg["piece_id"]
                 player_key = msg["player_key"]
@@ -483,15 +536,16 @@ async def ws_endpoint(websocket: WebSocket):
                     await manager.send_to(client_id, {"type": "__can_free_piece", "status": "position_occupied", **history[TURNO]})
                     continue
                 else:
-                    if piece_id == "ambassador_ambassador" and to_step not in player.positions and to_step not in other_players_position:
-                        moveAmbassador(to_step)
-                        setAmbassadorCaptured(False)
-                    else:
-                        other_p = list(filter(lambda p: p.color == piece_id.split("_")[0], Players))[0]
-                        other_p.movePiece(other_p.getStepFromPiece(piece_id.split("_")[1]), to_step)
-                        other_p.captured.remove(piece_id)
-                    history[TURNO]["talks"].pop(next(i for i,talk in enumerate(history[TURNO]["talks"]) if talk.get("capture_key", None) == capture_key))
-                    history[TURNO]["last_move"] = {"piece_id": piece_id, "from_step": "captured", "to_step": to_step, "using_move": "free"}
+                    async with manager.game_lock:
+                        if piece_id == "ambassador_ambassador" and to_step not in player.positions and to_step not in other_players_position:
+                            moveAmbassador(to_step)
+                            setAmbassadorCaptured(False)
+                        else:
+                            other_p = list(filter(lambda p: p.color == piece_id.split("_")[0], Players))[0]
+                            other_p.movePiece(other_p.getStepFromPiece(piece_id.split("_")[1]), to_step)
+                            other_p.captured.remove(piece_id)
+                        history[TURNO]["talks"].pop(next(i for i,talk in enumerate(history[TURNO]["talks"]) if talk.get("capture_key", None) == capture_key))
+                        history[TURNO]["last_move"] = {"piece_id": piece_id, "from_step": "captured", "to_step": to_step, "using_move": "free"}
                     await manager.send_to(client_id, {"type": "__can_free_piece", "status": "ok", **history[TURNO]})
                     await manager.sendPositionsToAll()
             elif msg["type"] == "end_turn":
@@ -501,16 +555,19 @@ async def ws_endpoint(websocket: WebSocket):
                     await manager.send_to(client_id, {"type": "end_turn", "status": "not_your_turn", **history[TURNO]})
                     continue
                 else:
-                    history[TURNO]["turn"] = "finished"
+                    async with manager.game_lock:
+                        history[TURNO]["turn"] = "finished"
                     await manager.send_to(client_id, {"type": "end_turn", "status": "ok", **history[TURNO]})
-                    history.pop(TURNO)
-                    TURNO = orders[(orders.index(TURNO)+1)%len(orders)]
-                    history[TURNO] = {}
+                    async with manager.game_lock:
+                        history.pop(TURNO)
+                        TURNO = orders[(orders.index(TURNO)+1)%len(orders)]
+                        history[TURNO] = {}
                     await manager.sendPositionsToAll()
 
-
     except WebSocketDisconnect:
-        manager.disconnect(client_id)
+        hb_task.cancel()
+        print(f"Client {client_id} disconnected")
+        await manager.disconnect(client_id)
         if Player1.client_id == client_id:
             #Player1.key = None
             Player1.client_id = None
@@ -523,13 +580,6 @@ async def ws_endpoint(websocket: WebSocket):
         elif Player4.client_id == client_id:
             #Player4.key = None
             Player4.client_id = None
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
