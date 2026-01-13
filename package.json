@@ -1,0 +1,24 @@
+{
+  "name": "inkognito",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:assets": "esbuild static/app.js --bundle --minify --sourcemap --target=es2017 --outdir=static/dist --entry-names=app.[hash] --metafile=static/dist/meta.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mpedy/inkognito.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mpedy/inkognito/issues"
+  },
+  "homepage": "https://github.com/mpedy/inkognito#readme",
+  "devDependencies": {
+    "esbuild": "^0.27.2"
+  }
+}
