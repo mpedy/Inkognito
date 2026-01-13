@@ -179,6 +179,7 @@ body{
     left: 10%;
     top: 5%;
     transform: skew(145deg, 10deg);
+    border: 1px solid #00000022;
 }
 .prophecy_ball.selected_move{
     outline: 5px solid gray;
@@ -186,6 +187,24 @@ body{
 .prophecy_ball[data-used='1']{
     opacity: 0.3;
     cursor: not-allowed;
+}
+.prophecy_ball:hover{
+    filter: drop-shadow(0px 0px 6px black);
+}
+.prophecy_ball[data-color='red']{
+    background-color: red;
+}
+.prophecy_ball[data-color='yellow']{
+    background-color: yellow;
+}
+.prophecy_ball[data-color='blue']{
+    background-color: blue;
+}
+.prophecy_ball[data-color='black']{
+    background-color: black;
+}
+.prophecy_ball[data-color='white']{
+    background-color: white;
 }
 .prophecy_ball.not_allowed{
     cursor: not-allowed;
