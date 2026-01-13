@@ -552,6 +552,9 @@ async def ws_endpoint(websocket: WebSocket):
                     continue
                 else:
                     async with manager.game_lock:
+                        if piece_id == "ambassador_ambassador" and steps["steps"][f"step_{to_step}"].get("class",None) is None:
+                            await manager.send_to(client_id, {"type": "__can_free_piece", "status": "invalid_ambassador_position", **history[TURNO]})
+                            continue
                         if piece_id == "ambassador_ambassador" and to_step not in player.positions and to_step not in other_players_position:
                             moveAmbassador(to_step)
                             setAmbassadorCaptured(False)
