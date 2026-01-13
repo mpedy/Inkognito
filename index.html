@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="apple-touch-icon" sizes="180x180" href="static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="static/favicon-16x16.png">
+    <link rel="manifest" href="static/site.webmanifest">
     <title>Inkognito</title>
     <link rel="stylesheet" href="/static/styles.css">
     <script>
@@ -59,7 +63,8 @@
         <div id="message_box_content"></div>
     </div>
     <div id="player_turn">
-        {{ t("turn_of") }}: <span id="player_turn_name" class="strong"></span>
+        <div id="player_online_indicator"><span class="offline"><img src="static/offline.svg" alt="offline">offline</span></div>
+        <div id="player_turn_info">{{ t("turn_of") }}: <span id="player_turn_name" class="strong"></span></div>
     </div>
     <div id="player_info_ui">
         <span id="player_name"></span>
@@ -559,5 +564,5 @@
 
 
 </body>
-<script src="/static/app.js" defer></script>
+<script src="static/{{ bundle_path }}" defer></script>
 </html>

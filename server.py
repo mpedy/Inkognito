@@ -1,8 +1,8 @@
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import HTMLResponse
+#from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import random
-from fastapi.websockets import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 import json
 from typing import Dict
 import uuid
@@ -11,11 +11,18 @@ from fastapi.templating import Jinja2Templates
 from functools import lru_cache
 import asyncio
 import time
+from pathlib import Path
+
+@lru_cache(maxsize=1)
+def asset_manifest():
+    p = Path("static/dist/manifest.json")
+    return json.loads(p.read_text(encoding="utf-8"))
 
 history = {}
 talk_keys = {}
 ambassador_position = "step_58"
 ambassador_is_captured = False
+GAME_UID = str(uuid.uuid4())
 
 def moveAmbassador(to_step):
     global ambassador_position
@@ -204,7 +211,8 @@ async def read_root(request: Request, lang: str = Depends(get_locale)):
     #return HTMLResponse(open("index.html").read())
     t = make_t(lang)
     d = load_dict(lang)
-    return templates.TemplateResponse("index.html", {"request": request, "t": t, "lang": lang, "I18N": d})
+    manifest = asset_manifest()
+    return templates.TemplateResponse("index.html", {"request": request, "t": t, "lang": lang, "I18N": d, "bundle_path": manifest["app"]})
    
 
 class ConnectionManager:
@@ -225,7 +233,7 @@ class ConnectionManager:
     async def disconnect(self, client_id: str):
         async with self._lock:
             ws = self.active.pop(client_id, None)
-        if ws:
+        if ws and ws.client_state != WebSocketState.DISCONNECTED:
             await ws.close()
 
     async def safe_send_text(self, client_id, data: str):
@@ -397,6 +405,14 @@ async def ws_endpoint(websocket: WebSocket):
                 if TURNO != player.player_turn:
                     await manager.send_to(client_id, {"type": "__can_move_piece", "status": "not_your_turn"})
                     continue
+                async with manager.game_lock:
+                    if history[TURNO].get("talks", None) is not None:
+                        betweens = []
+                        for talk in history[TURNO]["talks"]:
+                            betweens = talk["between"]
+                        if piece_id in betweens:
+                            await manager.send_to(client_id, {"type": "__can_move_piece", "status": "cannot_move_after_capture"})
+                            continue
                 if (\
                     # Yellow move
                     (((checkSeaMove(from_step, to_step) or checkLandMove(from_step, to_step)) and using_move == "yellow") \
@@ -469,7 +485,7 @@ async def ws_endpoint(websocket: WebSocket):
                     async with manager.game_lock:
                         history[TURNO].setdefault("talks", [])
                     prophecy_result = profetizza()
-                    #prophecy_result = ["yellow", "yellow", "black"]
+                    prophecy_result = ["yellow", "yellow", "black"]
                     print("Profetizza result: ", prophecy_result)
                     await manager.send_to(client_id, {"type": "__start_turn", "status": "ok", "prophecy": prophecy_result, "turn": "not_finished", "prophecy_used": []})
                     async with manager.game_lock:
@@ -516,7 +532,7 @@ async def ws_endpoint(websocket: WebSocket):
                 if msg["status"] == "waiting":
                     continue
                 data = msg["answer"]
-                await manager.send_to(talk_keys[msg["type"]]["to_player_client_id"], {"type": msg["type"],"status": msg["status"], "data": data, "from_player": talk_keys[msg["type"]]["from_player"], "talk_key": msg["type"], "data": data})
+                await manager.send_to(talk_keys[msg["type"]]["to_player_client_id"], {"type": msg["type"],"status": msg["status"], "data": data, "from_player": talk_keys[msg["type"]]["from_player"], "talk_key": msg["type"]})
                 async with manager.game_lock:
                     talk_keys.pop(msg["type"], None)
             elif msg["type"] == "__can_free_piece":
