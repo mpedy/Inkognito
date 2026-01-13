@@ -367,11 +367,9 @@ class GameUI{
     showProphecyResults(results){
         let balls = this.prophecyUIElem.querySelectorAll(".prophecy_ball");
         for(let i=0; i<balls.length; i++){
-            balls[i].style.backgroundColor = results[i];
             balls[i].setAttribute("data-color", results[i]);
             balls[i].classList.remove("selected_move");
             if(results[i] !== "white"){
-                //balls[i].addEventListener("click", function(){this.game.balls[i].getAttribute("data-used") === "1" ? null : this.game.selectMove(i)}.bind(this, i));
                 balls[i].classList.remove("not_allowed");
             }else{
                 balls[i].classList.add("not_allowed");
@@ -514,7 +512,6 @@ class Game{
         this.players = [this.me, new Player(),new Player(),new Player()];
         this.playerUI = new PlayerUI(this.players[0], "player_info_ui");
         this.gameUI = new GameUI(this);
-        this.comm.initWebsocket();
         this.otherPlayersUI = [
             new PlayerUI(this.players[1], "player_info_ui_1"),
             new PlayerUI(this.players[2], "player_info_ui_2"),
@@ -854,6 +851,7 @@ class Game{
         });
     };
     setup(){
+        this.comm.initWebsocket();
         this.generateSteps();
         this.me.key = this.cookieManager.getCookie("game_key");
         this.comm.addConnection("update_id", (comm, message)=>{
@@ -861,11 +859,11 @@ class Game{
         })
         this.comm.addConnection("pong", (comm, message)=>{
             console.log("Pong received");
-        })
+        });
         this.comm.addConnection("ping", (comm, message)=>{
             console.log("Ping received: ", message)
             comm.sendCraftedMessage("pong");
-        })
+        });
         this.comm.addConnection("action_talk", (comm, message)=>{
             this.handlers["action_talk"].bind(this)(message);
         });
@@ -937,6 +935,9 @@ class Game{
             }
             if(message["turn"]){
                 this.gameUI.showTurn(this.players.filter(p => p.player_turn == message["turn"])[0]);
+                if(message["turn"] == this.me.player_turn){
+                    this.startTurn();
+                }
             }
             this.gameUI.allPiecesArePositioned = true;
         })
