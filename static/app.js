@@ -1,4 +1,3 @@
-console.log("App.js loaded");
 const Colors = Object.freeze({
     RED: Symbol('red'),
     BLUE: Symbol('blue'),
