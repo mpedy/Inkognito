@@ -233,7 +233,6 @@ class PlayerUI{
 
 class GameUI{
     constructor(game){
-        this.steps = document.getElementById("steps");
         this.base_color = {
             "red": document.querySelectorAll(".step_red"),
             "green": document.querySelectorAll(".step_green"),
@@ -283,6 +282,10 @@ class GameUI{
         this.player_turn = document.getElementById("player_turn");
         this.message_box = document.getElementById("message_box");
         this.message_box.querySelector("#message_box_close").addEventListener("click", this.hideMessage.bind(this));
+        this.boardCoordinates = undefined;
+        this.ids = {
+            "max-left": ["captured_pieces_container","player_info_ui"]
+        }
     };
     popolateTrueCards(){
         this.myCardsElem = document.getElementById("my_cards");
@@ -457,6 +460,16 @@ class GameUI{
                 elem.classList.toggle("pieces_hidden");
             });
         }.bind(this));
+        this.updateMaxLeftCoordinates();
+        window.addEventListener("resize", this.updateMaxLeftCoordinates.bind(this));
+    };
+    updateMaxLeftCoordinates(){
+        let g1 = this.board.querySelector("#g1");
+        this.boardCoordinates = g1.getBoundingClientRect();
+        for(let id of this.ids["max-left"]){
+            let elem = document.getElementById(id);
+            elem.setAttribute("data-maxleft", this.boardCoordinates.left);
+        }
     };
     showLastMove(last_move){
         let pieceId = last_move["piece_id"];

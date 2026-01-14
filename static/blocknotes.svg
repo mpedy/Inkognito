@@ -1,0 +1,11 @@
+<svg viewBox="0 0 430 530" xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+    <g>
+        <path d="M20 40 H 400 a 10,10 0 0 1 10,10 V 480 a -10,10 0 0 1 -10,10 H 20 a -10,-10 0 0 1 -10,-10 V 50 a 10,-10 0 0 1 10,-10 Z" fill="none" stroke="black" stroke-width="10"/>
+        <path d="M60 120 H 200" stroke="black" stroke-width="15"/>
+        <path d="M60 180 H 200" stroke="black" stroke-width="15"/>
+        <path d="M60 240 H 380" stroke="black" stroke-width="15"/>
+        <path d="M60 300 H 380" stroke="black" stroke-width="15"/>
+        <path d="M60 360 H 380" stroke="black" stroke-width="15"/>
+        <path d="M60 420 H 380" stroke="black" stroke-width="15"/>
+    </g>
+</svg>

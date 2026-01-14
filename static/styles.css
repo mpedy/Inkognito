@@ -218,8 +218,8 @@ g.captured{
 #captured_pieces_container{
     position: absolute;
     top: 0px;
-    width: 200px;
-    height: 300px;
+    width: 40%;
+    /*height: 200px;*/
     display: flex;
     flex-direction: column;
     padding: 30px;
@@ -234,9 +234,23 @@ g.captured{
     padding: 30px;
     border-radius: 25px;
     justify-content: center;
+    width: 100%;
 }
-#captured_pieces>div{
+#captured_pieces_img_container{
     flex-grow: 1;
+    display: flex;
+    align-items: baseline;
+}
+#captured_pieces>div>div{
+    height: 100%;
+    width: 100%;
+    text-align: center;
+}
+.capturedpiece:not(.hidden)>div>div{
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+
 }
 .capturedpiece.selected>img{
     outline: 3px solid yellow;
@@ -355,4 +369,7 @@ span.green{
 }
 span.yellow{
     color: yellow;
+}
+*[data-maxleft]{
+    max-width: calc(attr(data-maxleft px) - 20px);
 }
