@@ -13,6 +13,8 @@ import asyncio
 import time
 from pathlib import Path
 
+VERSION="1.0"
+
 @lru_cache(maxsize=1)
 def asset_manifest():
     p = Path("static/dist/manifest.json")
@@ -212,7 +214,7 @@ async def read_root(request: Request, lang: str = Depends(get_locale)):
     t = make_t(lang)
     d = load_dict(lang)
     manifest = asset_manifest()
-    return templates.TemplateResponse("index.html", {"request": request, "t": t, "lang": lang, "I18N": d, "bundle_path": manifest["app"]})
+    return templates.TemplateResponse("index.html", {"request": request, "t": t, "lang": lang, "I18N": d, "bundle_path": manifest["app"], "version": VERSION})
    
 
 class ConnectionManager:
