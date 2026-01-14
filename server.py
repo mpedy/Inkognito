@@ -422,7 +422,9 @@ async def ws_endpoint(websocket: WebSocket):
                     # Blue move
                     or (checkSeaMove(from_step, to_step) and using_move == "blue")) \
                     # Check prophecy usage
-                    and len(history[TURNO]["prophecy_used"]) <3):
+                    and len(history[TURNO]["prophecy_used"]) <3 \
+                    # Check destination is free from player pieces
+                    and to_step not in player.positions):
                     print("MOVE CHECK PASSED")
                     print(steps["connections"][f"step_{from_step}"])
                     print("Checking move for player key: ", player_key)
