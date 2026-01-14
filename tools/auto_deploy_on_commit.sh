@@ -9,6 +9,9 @@ MAKE_TARGET="run-https"
 
 PID_FILE="/tmp/inkognito_server.pid"
 LOGFILE="${PROJECT_DIR}/logs/inkognito_server.log"
+SSLKEYFILE="${PROJECT_DIR}/certs/key.pem"
+SSLCERTFILE="${PROJECT_DIR}/certs/cert.pem"
+
 
 LOCKDIR="/tmp/inkognito_deploy_lock"
 if ! mkdir "${LOCKDIR}" 2>/dev/null; then
@@ -70,7 +73,7 @@ log "Attivazione del venv in $VENV_DIR..."
 export PATH="$VENV_DIR/bin:$PATH"
 export VIRTUAL_ENV="$VENV_DIR"
 
-nohup make "$MAKE_TARGET" >> "$LOGFILE" 2>&1 &
+nohup make "$MAKE_TARGET" SSLKEYFILE="$SSLKEYFILE" SSLCERTFILE="$SSLCERTFILE" >> "$LOGFILE" 2>&1 &
 
 NEW_PID="$!"
 

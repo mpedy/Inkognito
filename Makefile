@@ -1,7 +1,7 @@
 PY=python
 UV=uvicorn
 UVFLAGS=--host 0.0.0.0 --port 8000
-UVFLAGS_HTTPS=--host 0.0.0.0 --port 8000 --ssl-keyfile="certs/key.pem" --ssl-certfile="certs/cert.pem"
+UVFLAGS_HTTPS=--host 0.0.0.0 --port 8000 --ssl-keyfile=$(SSLKEYFILE) --ssl-certfile=$(SSLCERTFILE)
 
 run: bundle_assets
 	$(UV) server:app $(UVFLAGS)
