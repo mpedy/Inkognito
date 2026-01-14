@@ -85,6 +85,9 @@ class Communication{
     startWebSocket(){
         // Quando ci sarà una chiave univoca per il gioco (room):
         //this.ws = new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws_"+window.location.pathname);
+        if(document.location.protocol === "https:"){
+            return new WebSocket("wss://"+window.location.hostname+":"+window.location.port+"/ws");
+        }
         return new WebSocket("ws://"+window.location.hostname+":"+window.location.port+"/ws");
     }
     sendMessage(message){
