@@ -5,3 +5,4 @@ keys
 venv
 static/dist
 certs/*.pem
+logs
