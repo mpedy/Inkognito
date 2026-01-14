@@ -5,7 +5,7 @@ PROJECT_DIR="${HOME}/inkognito"
 BRANCH="master"
 VENV_DIR="${PROJECT_DIR}/venv"
 
-MAKE_TARGET="run"
+MAKE_TARGET="run-https"
 
 PID_FILE="/tmp/inkognito_server.pid"
 LOGFILE="${PROJECT_DIR}/logs/inkognito_server.log"
