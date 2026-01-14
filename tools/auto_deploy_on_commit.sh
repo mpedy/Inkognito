@@ -38,10 +38,6 @@ if [[ ! -x "$VENV_DIR/bin/python" ]]; then
   log "ERRORE: venv non trovato: $VENV_DIR (manca $VENV_DIR/bin/python)."
   exit 1
 fi
-if [[ ! -f "$SSLKEYFILE" || ! -f "$SSLCERTFILE" ]]; then
-  log "ERRORE: File di certificato SSL non trovati: $SSLKEYFILE o $SSLCERTFILE. Creazione di nuovi"
-  "${PROJECT_DIR}/tools/generate_self_signed_cert.sh" || { log "ERRORE: generazione del certificato SSL fallita."; exit 1; }
-fi
 
 git fetch origin "$BRANCH" || { log "ERRORE: git fetch fallito."; exit 1; }
 
@@ -71,6 +67,11 @@ fi
 log "git pull --ff-only origin $BRANCH..."
 
 git pull --ff-only origin "$BRANCH" | tee -a "$LOGFILE"
+
+if [[ ! -f "$SSLKEYFILE" || ! -f "$SSLCERTFILE" ]]; then
+  log "ERRORE: File di certificato SSL non trovati: $SSLKEYFILE o $SSLCERTFILE. Creazione di nuovi"
+  "${PROJECT_DIR}/tools/generate_self_signed_cert.sh" || { log "ERRORE: generazione del certificato SSL fallita."; exit 1; }
+fi
 
 log "Attivazione del venv in $VENV_DIR..."
 
