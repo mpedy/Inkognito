@@ -61,9 +61,9 @@ if [[ -f "$PID_FILE" ]]; then
     rm -f "$PID_FILE"
 fi
 
-log "git pull origin $BRANCH..."
+log "git pull --ff-only origin $BRANCH..."
 
-git pull origin "$BRANCH" | tee -a "$LOGFILE"
+git pull --ff-only origin "$BRANCH" | tee -a "$LOGFILE"
 
 log "Attivazione del venv in $VENV_DIR..."
 
