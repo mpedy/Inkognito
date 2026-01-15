@@ -13,7 +13,7 @@ import asyncio
 import time
 from pathlib import Path
 
-VERSION="1.0"
+VERSION="1.1"
 
 @lru_cache(maxsize=1)
 def asset_manifest():
