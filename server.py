@@ -121,16 +121,27 @@ class Player:
     def __repr__(self):
         return self.__str__()
 
-Player1 = Player(1)
-Player2 = Player(2)
-Player3 = Player(3)
-Player4 = Player(4)
-Players = [Player1, Player2, Player3, Player4]
+Player1 = None
+Player2 = None
+Player3 = None
+Player4 = None
+Players = None
 
 def createNewPlayers():
     global TURNO
-    global history
     global orders
+    global Player1, Player2, Player3, Player4, Players
+    global history, talk_keys, ambassador_position, ambassador_is_captured, GAME_UID
+    history = {}
+    talk_keys = {}
+    ambassador_position = "step_58"
+    ambassador_is_captured = False
+    GAME_UID = str(uuid.uuid4())
+    Player1 = Player(1)
+    Player2 = Player(2)
+    Player3 = Player(3)
+    Player4 = Player(4)
+    Players = [Player1, Player2, Player3, Player4]
     bodies = np.random.choice(BODYTYPES, size=4, replace=False)
     colors = np.random.choice(COLORS, size=4, replace=False)
     missions = np.random.choice(MISSIONS, size=4, replace=False)
@@ -220,6 +231,16 @@ async def read_root(request: Request, lang: str = Depends(get_locale)):
 async def restart_game():
     global GAME_UID
     GAME_UID = str(uuid.uuid4())
+    if Player1.client_id is not None:
+        await manager.disconnect(Player1.client_id)
+    if Player2.client_id is not None:
+        await manager.disconnect(Player2.client_id)
+    if Player3.client_id is not None:
+        await manager.disconnect(Player3.client_id)
+    if Player4.client_id is not None:
+        await manager.disconnect(Player4.client_id)
+    createNewPlayers()
+    return "OK"
    
 
 class ConnectionManager:
