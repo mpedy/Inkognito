@@ -251,7 +251,9 @@ g.captured{
     display: flex;
     justify-content: center;
     align-items: flex-end;
-
+}
+.capturedpiece>img{
+    height: 50%;
 }
 .capturedpiece.selected>img{
     outline: 3px solid yellow;
