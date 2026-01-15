@@ -70,7 +70,7 @@ git pull --ff-only origin "$BRANCH" | tee -a "$LOGFILE"
 
 if [[ ! -f "$SSLKEYFILE" || ! -f "$SSLCERTFILE" ]]; then
   log "ERRORE: File di certificato SSL non trovati: $SSLKEYFILE o $SSLCERTFILE. Creazione di nuovi"
-  "${PROJECT_DIR}/certs/generate_self_signed_cert.sh" || { log "ERRORE: generazione del certificato SSL fallita."; exit 1; }
+  "${PROJECT_DIR}/certs/generate_certificate.sh" || { log "ERRORE: generazione del certificato SSL fallita."; exit 1; }
 fi
 
 log "Attivazione del venv in $VENV_DIR..."
