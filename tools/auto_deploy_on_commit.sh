@@ -25,7 +25,7 @@ ts() {
     date +"[%Y-%m-%d %H:%M:%S] $*"
 }
 log() {
-    echo "[$(ts)] $*" | tee -a "$LOGFILE";
+    echo "$(ts) $*" | tee -a "$LOGFILE";
 }
 
 cd "$PROJECT_DIR"
