@@ -215,6 +215,11 @@ async def read_root(request: Request, lang: str = Depends(get_locale)):
     d = load_dict(lang)
     manifest = asset_manifest()
     return templates.TemplateResponse("index.html", {"request": request, "t": t, "lang": lang, "I18N": d, "bundle_path": manifest["app"], "version": VERSION})
+
+@app.get("/restart")
+async def restart_game():
+    global GAME_UID
+    GAME_UID = str(uuid.uuid4())
    
 
 class ConnectionManager:
