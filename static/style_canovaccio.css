@@ -14,10 +14,16 @@
     border: 1px solid black;
     padding: 20px;
 }
-#canovaccio>table>tbody>tr>th{
+.writing_vertical{
     writing-mode: vertical-lr;
     text-align: end;
-    
+    align-content: center;
+}
+.canovaccio_head.header_name{
+    align-content: end;
+}
+.header_sigla{
+    font-size: 18px;
 }
 #canovaccio>table>tbody>tr>td{
     width: 12px;
@@ -25,7 +31,11 @@
     align-content: start;
 }
 #canovaccio>table>tbody>tr>td>input{
-    width: 12px;
-    height: 12px;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    font-size: 20px;
+}
+.canovaccio_input{
     text-align: center;
 }
