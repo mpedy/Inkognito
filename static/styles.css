@@ -374,5 +374,5 @@ span.yellow{
     color: yellow;
 }
 *[data-maxleft]{
-    max-width: calc(attr(data-maxleft px) - 20px);
+    max-width: var(--max-left, 100%);
 }

@@ -472,6 +472,7 @@ class GameUI{
         for(let id of this.ids["max-left"]){
             let elem = document.getElementById(id);
             elem.setAttribute("data-maxleft", this.boardCoordinates.left);
+            elem.style.setProperty("--max-left", `${this.boardCoordinates.left-20}px`);
         }
     };
     showLastMove(last_move){
