@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:assets": "esbuild static/app.js --bundle --minify --sourcemap --target=es2017 --outdir=static/dist --entry-names=app.[hash] --metafile=static/dist/meta.json"
+    "build:assets": "esbuild static/app.js --bundle --minify --sourcemap --target=es2017 --outdir=static/dist --entry-names=app.[hash] --metafile=static/dist/meta.json && esbuild static/styles.css --bundle --minify --sourcemap --target=chrome58,firefox57,safari11 --outdir=static/dist --entry-names=style.[hash] --metafile=static/dist/meta_css.json"
   },
   "repository": {
     "type": "git",

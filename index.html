@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="static/favicon-16x16.png">
     <link rel="manifest" href="static/site.webmanifest">
     <title>Inkognito</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="static/{{ style_bundle_path }}">
     <link rel="preload" href="static/online.svg">
     <link rel="preload" href="static/offline.svg">
     <script>
@@ -570,5 +570,5 @@
 <script>
     console.log("Inkognito version {{ version }}");
 </script>
-<script src="static/{{ bundle_path }}" defer></script>
+<script src="static/{{ app_bundle_path }}" defer></script>
 </html>

@@ -225,7 +225,7 @@ async def read_root(request: Request, lang: str = Depends(get_locale)):
     t = make_t(lang)
     d = load_dict(lang)
     manifest = asset_manifest()
-    return templates.TemplateResponse("index.html", {"request": request, "t": t, "lang": lang, "I18N": d, "bundle_path": manifest["app"], "version": VERSION})
+    return templates.TemplateResponse("index.html", {"request": request, "t": t, "lang": lang, "I18N": d, "app_bundle_path": manifest["app"], "style_bundle_path": manifest["style"], "version": VERSION})
 
 @app.get("/restart")
 async def restart_game():
