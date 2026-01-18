@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/mpedy/inkognito#readme",
   "devDependencies": {
-    "esbuild": "^0.27.2"
+    "esbuild": "^0.27.2",
+    "lightningcss": "^1.30.2"
   }
 }
