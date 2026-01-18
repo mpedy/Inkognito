@@ -41,6 +41,23 @@ class Player{
         return this.bodytype.toString().split("Symbol(")[1].split(")")[0];
     }
 }
+
+class Utilities{
+    static shuffleArray(array){
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+    static shuffleArrayWithNValues(array, val, n){
+        Utilities.shuffleArray(array);
+        for(let i=0; i<n; i++){
+            let index = Math.floor(Math.random() * array.length);
+            array[index] = val;
+        }
+    }
+}
+
 class Communication{
     constructor(game){
         this.game = game;
@@ -370,8 +387,55 @@ class GameUI{
             elem.classList.remove("last_move_highlight");
         });
     };
-    showProphecyResults(results){
+    setBallAnimation1(ballElem){
+        let array_color = ["white","black","red","blue","yellow","white"];
+        Utilities.shuffleArray(array_color);
+        ballElem.style.setProperty("--cball1",array_color[0]);
+        ballElem.style.setProperty("--cball2",array_color[1]);
+        ballElem.style.setProperty("--cball3",array_color[2]);
+        ballElem.style.setProperty("--cball4",array_color[3]);
+        ballElem.style.setProperty("--cball5",array_color[4]);
+        ballElem.style.setProperty("--cball6",array_color[5]);
+        ballElem.classList.add("animated_ball_05s");
+    };
+    setBallAnimation2(ballElem){
+        let array_color = ["white","black","red","blue","yellow","white"];
+        Utilities.shuffleArrayWithNValues(array_color,ballElem.getAttribute("data-color"), 3);
+        ballElem.style.setProperty("--cball1",array_color[0]);
+        ballElem.style.setProperty("--cball2",array_color[1]);
+        ballElem.style.setProperty("--cball3",array_color[2]);
+        ballElem.style.setProperty("--cball4",array_color[3]);
+        ballElem.style.setProperty("--cball5",array_color[4]);
+        ballElem.style.setProperty("--cball6",array_color[5]);
+        ballElem.classList.remove("animated_ball_05s");
+        ballElem.classList.add("animated_ball_1s");
+    };
+    setBallAnimation3(ballElem){
+        let array_color = ["white","black","red","blue","yellow","white"];
+        Utilities.shuffleArrayWithNValues(array_color,ballElem.getAttribute("data-color"), 4);
+        ballElem.classList.remove("animated_ball_1s");
+        ballElem.classList.add("animated_ball_2s");
+    };
+    unsetBallAnimation(ballElem){
+        ballElem.classList.remove("animated_ball_2s");
+        ballElem.style.removeProperty("--cball1");
+        ballElem.style.removeProperty("--cball2");
+        ballElem.style.removeProperty("--cball3");
+        ballElem.style.removeProperty("--cball4");
+        ballElem.style.removeProperty("--cball5");
+        ballElem.style.removeProperty("--cball6");
+    };
+    toggleProphecyContainer(active){
+        if(active){
+            document.getElementById("prophecy_ball_container").classList.add("active");
+
+        }else{
+            document.getElementById("prophecy_ball_container").classList.remove("active");
+        }
+    };
+    showProphecyResults(results, animate=true){
         let balls = this.prophecyUIElem.querySelectorAll(".prophecy_ball");
+        this.toggleProphecyContainer(false);
         for(let i=0; i<balls.length; i++){
             balls[i].setAttribute("data-color", results[i]);
             balls[i].classList.remove("selected_move");
@@ -380,6 +444,27 @@ class GameUI{
             }else{
                 balls[i].classList.add("not_allowed");
             }
+            if(animate){
+                this.setBallAnimation1(balls[i]);
+            }
+        }
+        if(animate){
+            setTimeout( () => {
+                for(let i=0; i<balls.length; i++){
+                    this.setBallAnimation2(balls[i]);
+                }
+                setTimeout(() => {
+                    for(let i=0; i<balls.length; i++){
+                        this.setBallAnimation3(balls[i]);
+                    }
+                    setTimeout(() => {
+                        for(let i=0; i<balls.length; i++){
+                            this.unsetBallAnimation(balls[i]);
+                            this.toggleProphecyContainer(true);
+                        }
+                    },1000);
+                }, 1000);
+            }, 800);
         }
     };
     useProphecy(mv){
@@ -795,7 +880,7 @@ class Game{
             this.gameUI.showMessage(t("you_must_free_captured_pieces_before_ending_turn"));
             return;
         }
-        this.gameUI.showProphecyResults(["white","white","white"]);
+        this.gameUI.showProphecyResults(["white","white","white"], false);
         this.comm.sendCraftedMessage("end_turn",{
             "player_key": this.me.key
         });

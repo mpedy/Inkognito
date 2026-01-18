@@ -1,0 +1,17 @@
+@keyframes loop_color{
+    0% { background-color: var(--cball1);}
+    20% { background-color: var(--cball2);}
+    40% { background-color: var(--cball3);}
+    60% { background-color: var(--cball4);}
+    80% { background-color: var(--cball5);}
+    100% { background-color: var(--cball6);}
+}
+.animated_ball_05s{
+    animation: loop_color 0.5s steps(1,end) infinite;
+}
+.animated_ball_1s{
+    animation: loop_color 1s steps(1,end) infinite;
+}
+.animated_ball_2s{
+    animation: loop_color 2s steps(1,end) infinite;
+}
